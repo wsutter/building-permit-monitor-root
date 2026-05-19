@@ -1,0 +1,49 @@
+# Maven build output
+target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse / Spring Tools
+.classpath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+# VS Code
+.vscode/
+
+# Java / JVM
+*.class
+*.log
+*.pid
+*.hprof
+hs_err_pid*
+replay_pid*
+
+# Test reports and coverage
+surefire-reports/
+failsafe-reports/
+jacoco.exec
+coverage/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+application-local.yml
+application-local.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
