@@ -1,0 +1,49 @@
+@startuml
+title building-permit-monitor - Microservice Architecture
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+cloud "External Open Data" {
+  component "Kanton Zurich<br/>Building Permit Dataset" as source
+  component "geo.admin.ch" as geo
+}
+
+node "platform" {
+  queue "Kafka<br/>KRaft Mode" as kafka
+  queue "DLQ Topics<br/>raw.dlq<br/>normalized.dlq<br/>enriched.dlq" as dlq
+  database "PostgreSQL<br/>PostGIS" as postgres
+
+  component "ingestor" as ingestor
+  component "normalizer" as normalizer
+  component "enricher" as enricher
+  component "persistence" as persistence
+  component "api" as api
+  component "web<br/>Angular Library" as web
+  component "Studio r2 Web-App<br/>host application" as host
+}
+
+component "contracts<br/>events, topic constants,<br/>KafkaDlqConfiguration" as contracts
+
+source --> ingestor : CSV / GPKG
+ingestor --> kafka : building-permit.raw
+kafka --> normalizer : consumes raw
+normalizer --> kafka : building-permit.normalized
+normalizer --> dlq : building-permit.raw.dlq
+kafka --> enricher : consumes normalized
+geo --> enricher : optional GIS lookup
+enricher --> kafka : building-permit.enriched
+enricher --> dlq : building-permit.normalized.dlq
+kafka --> persistence : consumes enriched
+persistence --> postgres : upsert permits
+persistence --> dlq : building-permit.enriched.dlq
+api --> postgres : spatial queries
+host --> web : library dependency
+web --> api : REST
+
+normalizer ..> contracts : imports shared config
+enricher ..> contracts : imports shared config
+persistence ..> contracts : imports shared config
+ingestor ..> contracts : uses events / topics
+
+@enduml

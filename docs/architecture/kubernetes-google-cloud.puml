@@ -1,0 +1,41 @@
+@startuml
+title building-permit-monitor - Kubernetes on Google Cloud
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+cloud "Google Cloud<br/>Region: europe-west6 Zurich" {
+  node "GKE Cluster" {
+    component "ingestor Deployment" as ingestor
+    component "normalizer Deployment" as normalizer
+    component "enricher Deployment" as enricher
+    component "persistence Deployment" as persistence
+    component "api Deployment" as api
+    component "studio-r2 Web-App Deployment" as host
+    component "web Angular Library" as web
+    queue "Kafka StatefulSet<br/>KRaft" as kafka
+  }
+
+  database "Cloud SQL PostgreSQL<br/>with PostGIS" as cloudsql
+  component "HTTP Load Balancer" as lb
+  component "Artifact Registry" as registry
+}
+
+registry --> ingestor
+registry --> normalizer
+registry --> enricher
+registry --> persistence
+registry --> api
+registry --> host
+
+ingestor --> kafka
+normalizer --> kafka
+enricher --> kafka
+persistence --> kafka
+persistence --> cloudsql
+api --> cloudsql
+lb --> host
+host --> web : imports library
+web --> api
+
+@enduml

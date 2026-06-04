@@ -1,0 +1,32 @@
+@startuml
+title building-permit-monitor - Local Podman Compose Deployment
+
+skinparam nodeStyle rectangle
+skinparam shadowing false
+
+node "Developer Machine" {
+  node "Podman Compose Network" {
+    node "Kafka Container<br/>KRaft" as kafka
+    node "PostgreSQL Container<br/>PostGIS Extension" as postgres
+    node "Ingestor Container" as ingestor
+    node "Normalizer Container" as normalizer
+    node "Enricher Container" as enricher
+    node "Persistence Container" as persistence
+    node "API Container" as api
+    node "Studio r2 Web-App Dev Server" as host
+    node "web Angular Library Build" as web
+    node "Conduktor Console Container" as conduktor
+  }
+}
+
+conduktor --> kafka : inspect topics / messages
+ingestor --> kafka
+normalizer --> kafka
+enricher --> kafka
+persistence --> kafka
+persistence --> postgres
+api --> postgres
+host --> web : imports library
+web --> api
+
+@enduml

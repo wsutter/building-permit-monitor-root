@@ -1,9 +1,9 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="ingestor - Application" type="Application" factoryName="Application">
+  <configuration default="false" name="03 - enricher - Application" type="Application" factoryName="Application">
     <option name="ALTERNATIVE_JRE_PATH" value="26" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
-    <option name="MAIN_CLASS_NAME" value="ch.studior2.buildingpermitmonitor.ingestor.BuildingPermitIngestorApplication" />
-    <module name="ingestor" />
+    <option name="MAIN_CLASS_NAME" value="ch.studior2.buildingpermitmonitor.enricher.BuildingPermitEnricherApplication" />
+    <module name="enricher" />
     <option name="VM_PARAMETERS" value="-Dspring.profiles.active=local" />
     <method v="2">
       <option name="Make" enabled="true" />

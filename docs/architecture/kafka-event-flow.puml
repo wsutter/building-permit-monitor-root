@@ -1,0 +1,53 @@
+@startuml
+title building-permit-monitor - Kafka Event Flow
+
+skinparam shadowing false
+
+participant "Scheduler" as scheduler
+participant "Ingestor" as ingestor
+queue "building-permit.raw" as raw
+queue "building-permit.raw.dlq" as rawDlq
+participant "Normalizer" as normalizer
+queue "building-permit.normalized" as normalized
+queue "building-permit.normalized.dlq" as normalizedDlq
+participant "Enricher" as enricher
+queue "building-permit.enriched" as enriched
+queue "building-permit.enriched.dlq" as enrichedDlq
+participant "Persistence" as persistence
+database "PostGIS" as postgis
+
+scheduler -> ingestor : trigger polling job
+ingestor -> ingestor : download CSV
+ingestor -> ingestor : detect new / changed records
+ingestor -> raw : publish RawBuildingPermitEvent
+
+raw -> normalizer : consume
+normalizer -> normalizer : validate and map fields
+normalizer -> normalized : publish NormalizedBuildingPermitEvent
+normalizer -> rawDlq : processing failed after retries
+
+normalized -> enricher : consume
+enricher -> enricher : geocode / enrich GIS data
+enricher -> enriched : publish EnrichedBuildingPermitEvent
+enricher -> normalizedDlq : processing failed after retries
+
+enriched -> persistence : consume
+persistence -> persistence : idempotency check
+persistence -> postgis : upsert permit
+persistence -> enrichedDlq : processing failed after retries
+
+note right of rawDlq
+  Global KafkaDlqConfiguration
+  routes by original topic:
+  raw -> raw.dlq
+end note
+
+note right of normalizedDlq
+  normalized -> normalized.dlq
+end note
+
+note right of enrichedDlq
+  enriched -> enriched.dlq
+end note
+
+@enduml

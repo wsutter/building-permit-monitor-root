@@ -1,9 +1,9 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="normalizer - Application" type="Application" factoryName="Application">
+  <configuration default="false" name="01 - ingestor - Application" type="Application" factoryName="Application">
     <option name="ALTERNATIVE_JRE_PATH" value="26" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
-    <option name="MAIN_CLASS_NAME" value="ch.studior2.buildingpermitmonitor.normalizer.BuildingPermitNormalizerApplication" />
-    <module name="normalizer" />
+    <option name="MAIN_CLASS_NAME" value="ch.studior2.buildingpermitmonitor.ingestor.BuildingPermitIngestorApplication" />
+    <module name="ingestor" />
     <option name="VM_PARAMETERS" value="-Dspring.profiles.active=local" />
     <method v="2">
       <option name="Make" enabled="true" />

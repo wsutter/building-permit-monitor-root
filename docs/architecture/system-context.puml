@@ -1,0 +1,26 @@
+@startuml
+title building-permit-monitor - System Context
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Public User" as user
+rectangle "Open Data Kanton Zurich" as ktzh
+rectangle "geo.admin.ch APIs" as geoadmin
+rectangle "building-permit-monitor" as system {
+  component "Studio r2 Web-App<br/>host application" as host
+  component "Building Permit Web Module<br/>Angular Library + Leaflet" as web
+  component "Public API<br/>Spring Boot" as api
+  component "Event Pipeline<br/>Kafka + Microservices" as pipeline
+  database "PostgreSQL + PostGIS" as db
+}
+
+user --> host : views permits on map
+host --> web : integrates library module
+web --> api : REST / JSON
+api --> db : reads permits
+pipeline --> db : writes enriched permits
+pipeline --> ktzh : downloads public building permits
+pipeline --> geoadmin : optional geocoding / GIS enrichment
+
+@enduml

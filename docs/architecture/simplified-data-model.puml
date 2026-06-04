@@ -1,0 +1,46 @@
+@startuml
+title building-permit-monitor - Simplified Data Model
+
+hide circle
+skinparam linetype ortho
+skinparam shadowing false
+
+entity "building_permits" as permits {
+  * id : uuid
+  --
+  source : text
+  external_id : text
+  title : text
+  description : text
+  category : text
+  status : text
+  municipality : text
+  published_date : date
+  address : text
+  geom : geometry(Point, 4326)
+  raw_payload : jsonb
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity "permit_events" as events {
+  * id : uuid
+  --
+  permit_id : uuid
+  event_type : text
+  event_timestamp : timestamp
+  payload : jsonb
+}
+
+entity "municipalities" as municipalities {
+  * bfs_number : integer
+  --
+  name : text
+  canton : text
+  geom : geometry(MultiPolygon, 4326)
+}
+
+municipalities ||--o{ permits : contains
+permits ||--o{ events : has
+
+@enduml

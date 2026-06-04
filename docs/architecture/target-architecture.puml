@@ -1,0 +1,76 @@
+@startuml
+title building-permit-monitor - Zielarchitektur
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+actor "Public User" as user
+
+cloud "Open Data" {
+  component "Kanton Zürich\nBaugesuche CSV / GPKG" as ktzh
+  component "geo.admin.ch\noptionale GIS APIs" as geoadmin
+}
+
+package "building-permit-monitor" {
+  package "platform" {
+    queue "Kafka\nKRaft Mode" as kafka
+    queue "Dead Letter Topics\nraw.dlq\nnormalized.dlq\nenriched.dlq" as dlq
+    database "PostgreSQL\nPostGIS" as postgis
+  }
+
+  package "Event Pipeline" {
+    component "ingestor\nSpring Boot" as ingestor
+    component "normalizer\nSpring Boot" as normalizer
+    component "enricher\nSpring Boot" as enricher
+    component "persistence\nSpring Boot" as persistence
+  }
+
+  package "Shared Contracts" {
+    component "contracts\nJava Library" as contracts
+    component "KafkaDlqConfiguration\nDefaultErrorHandler" as dlqConfig
+  }
+
+  package "Query API" {
+    component "api\nSpring Boot REST API" as api
+  }
+
+  package "Reusable Frontend Module" {
+    component "web\nAngular Library + Leaflet" as web
+  }
+}
+
+package "Studio r2 Web Platform" {
+  component "Studio r2 Web-App\nAngular Host Application" as host
+}
+
+user --> host : nutzt Kartenansicht
+host --> web : integriert als Dependency
+web --> api : REST / JSON
+api --> postgis : liest Baugesuche
+
+ktzh --> ingestor : CSV / GPKG Download
+ingestor --> kafka : building-permit.raw
+kafka --> normalizer : Raw Events
+normalizer --> kafka : building-permit.normalized
+normalizer --> dlq : building-permit.raw.dlq
+kafka --> enricher : Normalized Events
+geoadmin --> enricher : optionale GIS-Anreicherung
+enricher --> kafka : building-permit.enriched
+enricher --> dlq : building-permit.normalized.dlq
+kafka --> persistence : Enriched Events
+persistence --> postgis : idempotenter Upsert
+persistence --> dlq : building-permit.enriched.dlq
+
+ingestor ..> contracts : nutzt Events
+normalizer ..> contracts : nutzt Events
+enricher ..> contracts : nutzt Events
+persistence ..> contracts : nutzt Events
+api ..> contracts : nutzt DTOs optional
+normalizer ..> dlqConfig : importiert
+enricher ..> dlqConfig : importiert
+persistence ..> dlqConfig : importiert
+dlqConfig ..> contracts : nutzt Topic-Konstanten
+
+@enduml
