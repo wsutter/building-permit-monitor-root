@@ -59,6 +59,7 @@
     <maven.failsafe.plugin.version>3.5.4</maven.failsafe.plugin.version>
     <maven.enforcer.plugin.version>3.6.1</maven.enforcer.plugin.version>
     <spring-boot-maven-plugin.version>4.0.6</spring-boot-maven-plugin.version>
+    <flyway-maven-plugin.version>12.8.1</flyway-maven-plugin.version>
     <!-- Coverage -->
     <jacoco.version>0.8.13</jacoco.version>
     <!-- Formatting -->
@@ -442,6 +443,18 @@
               </configuration>
             </execution>
           </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.flywaydb</groupId>
+          <artifactId>flyway-maven-plugin</artifactId>
+          <version>${flyway-maven-plugin.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.postgresql</groupId>
+              <artifactId>postgresql</artifactId>
+              <version>${postgresql.version}</version>
+            </dependency>
+          </dependencies>
         </plugin>
       </plugins>
     </pluginManagement>
