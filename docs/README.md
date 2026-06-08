@@ -3478,10 +3478,15 @@ spring:
 Datei:
 
 ```text
-src/main/resources/db/migration/V1__create_building_permits.sql
+src/main/resources/db/migration/V1__create_building_permit_raw_event_registry.sql
+src/main/resources/db/migration/V2__create_extension_postgis.sql
 ```
 
-Die Migration erstellt die Tabelle `building_permits` und aktiviert PostGIS. Das vollständige SQL steht im Abschnitt `Datenbankmodell`.
+Die erste Migration erstellt die Tabelle `building_permit_raw_event_registry`.
+
+Die zweite Migration aktiviert PostGIS und erstellt die Tabelle `building_permits`.
+
+Die vollständigen SQL-Scripts stehen im Abschnitt `Datenbankmodell`.
 
 ### Schritt 4: Persistence Consumer implementieren
 
