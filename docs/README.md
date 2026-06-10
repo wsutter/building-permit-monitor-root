@@ -223,7 +223,9 @@ Der technische Ziel-Stack ist bewusst modern gewählt. Für den MVP muss nicht j
 - PostGIS Extension
 - Flyway Migrationen
 - JPA Entities für fachliche Tabellen
-- native SQL oder JDBC dort, wo PostGIS-spezifische Queries einfacher und klarer sind
+- Hibernate Spatial für PostGIS-Geometrien
+- JTS (`org.locationtech.jts`) für `Point` und weitere Geometrietypen
+- native SQL nur dort, wo PostGIS-spezifische Queries mit JPA/JPQL weniger klar wären
 
 ### Frontend
 
@@ -361,7 +363,7 @@ module ch.studior2.buildingpermitmonitor.api {
 }
 ```
 
-Hinweis: Spring Boot funktioniert mit Java-Modulen, benötigt aber für Reflection gezielte `opens`-Direktiven. Deshalb werden nur die Spring-Komponenten-Packages geoeffnet, während fachliche DTOs und Event-Klassen explizit exportiert werden.
+Hinweis: Spring Boot funktioniert mit Java-Modulen, benötigt aber für Reflection gezielte `opens`-Direktiven. Deshalb werden nur die Spring-Komponenten-Packages geöffnet, während fachliche DTOs und Event-Klassen explizit exportiert werden.
 
 ## Repository-Struktur
 
@@ -1076,6 +1078,44 @@ web
 ```
 
 Dadurch bleibt jeder Service klein, testbar und unabhängig deploybar. Kafka bildet die Integrationsschicht, PostgreSQL/PostGIS ist das Query- und Read-Modell für die API.
+
+### Aktueller Event-Flow inklusive DLQs
+
+```text
+Open Data CSV
+    |
+    v
+ingestor
+    |
+    v
+building-permit.raw
+    |
+    v
+normalizer  -- Fehler --> building-permit.raw.dlq
+    |
+    v
+building-permit.normalized
+    |
+    v
+enricher    -- Fehler --> building-permit.normalized.dlq
+    |
+    v
+building-permit.enriched
+    |
+    v
+persistence -- Fehler --> building-permit.enriched.dlq
+    |
+    v
+PostgreSQL/PostGIS
+    |
+    v
+api
+    |
+    v
+web Angular Library
+```
+
+Die DLQ-Zuordnung wird zentral im `contracts`-Modul über `KafkaDlqConfiguration` definiert.
 
 ### Gemeinsame Maven-Konventionen
 
@@ -2802,7 +2842,31 @@ public final class KafkaTopics {
 }
 ```
 
-### Schritt 5: Library lokal installieren
+### Schritt 5: Consumer-Group-Konstanten anlegen
+
+Die Kafka Consumer Group IDs werden ebenfalls zentral im `contracts`-Modul definiert. Dadurch stehen keine String-Literale in den `@KafkaListener`-Annotationen der Services.
+
+```java
+package ch.studior2.buildingpermitmonitor.contracts.group;
+
+public final class KafkaGroupIDs {
+
+    public static final String PERSISTENCE = "persistence";
+    public static final String NORMALIZER = "normalizer";
+    public static final String ENRICHER = "enricher";
+
+    private KafkaGroupIDs() {
+    }
+}
+```
+
+Beispiel:
+
+```java
+@KafkaListener(topics = KafkaTopics.RAW, groupId = KafkaGroupIDs.NORMALIZER)
+```
+
+### Schritt 6: Library lokal installieren
 
 ```bash
 mvn clean install
@@ -2923,7 +2987,6 @@ management:
 package ch.studior2.buildingpermitmonitor.ingestor.kafka;
 
 import ch.studior2.buildingpermitmonitor.contracts.event.BuildingPermitRawEvent;
-import ch.studior2.buildingpermitmonitor.contracts.group.KafkaGroupIDs;
 import ch.studior2.buildingpermitmonitor.contracts.topic.KafkaTopics;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -3437,16 +3500,83 @@ podman exec -it bpm-kafka /opt/kafka/bin/kafka-console-consumer.sh \
 
 ## Schritt-für-Schritt-Anleitung: Persistence Service
 
-`persistence` konsumiert Enriched Events und speichert sie idempotent in PostgreSQL/PostGIS.
+`persistence` konsumiert Enriched Events und speichert sie idempotent in PostgreSQL/PostGIS. Die aktuelle Umsetzung verwendet **Spring Data JPA**, **Hibernate Spatial** und **JTS**. JDBC Template wird im Persistence-Modul nicht mehr verwendet.
 
 ### Schritt 1: Spring-Boot-Projekt erzeugen
 
 ```text
 Artifact: persistence
-Dependencies: Spring for Apache Kafka, Spring JDBC, PostgreSQL Driver, Flyway Migration, Validation, Actuator
+Dependencies: Spring for Apache Kafka, Spring Data JPA, PostgreSQL Driver, Flyway Migration, Validation, Actuator
 ```
 
-Zusätzlich `contracts` einbinden.
+Zusätzlich werden diese Dependencies benötigt:
+
+```xml
+<dependency>
+    <groupId>ch.studio-r2.building-permit-monitor</groupId>
+    <artifactId>contracts</artifactId>
+    <version>${project.version}</version>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.postgresql</groupId>
+    <artifactId>postgresql</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.hibernate.orm</groupId>
+    <artifactId>hibernate-spatial</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.locationtech.jts</groupId>
+    <artifactId>jts-core</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-flyway</artifactId>
+</dependency>
+```
+
+Für Repository-Tests gegen echte PostGIS-Funktionen:
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-test</artifactId>
+    <scope>test</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+    <scope>test</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-testcontainers</artifactId>
+    <scope>test</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>junit-jupiter</artifactId>
+    <scope>test</scope>
+</dependency>
+
+<dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>postgresql</artifactId>
+    <scope>test</scope>
+</dependency>
+```
 
 ### Schritt 2: `application.yml` konfigurieren
 
@@ -3463,6 +3593,13 @@ spring:
   flyway:
     enabled: true
 
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
@@ -3473,22 +3610,186 @@ spring:
         spring.json.trusted.packages: 'ch.studior2.buildingpermitmonitor.*'
 ```
 
+Wichtig: Flyway erstellt das Schema. Hibernate validiert es nur. Tabellen sollten nicht automatisch durch Hibernate erzeugt werden.
+
 ### Schritt 3: Flyway Migration erstellen
 
-Datei:
+Dateien:
 
 ```text
 src/main/resources/db/migration/V1__create_building_permit_raw_event_registry.sql
 src/main/resources/db/migration/V2__create_extension_postgis.sql
+src/main/resources/db/migration/V3__create_building_permits.sql
 ```
 
-Die erste Migration erstellt die Tabelle `building_permit_raw_event_registry`.
+Die Migrationen erledigen:
 
-Die zweite Migration aktiviert PostGIS und erstellt die Tabelle `building_permits`.
+- Aktivierung von PostGIS
+- Erstellung der Tabelle `building_permit_raw_event_registry`
+- Erstellung der Tabelle `building_permits`
+- GIST-Index auf `geom`
+- Unique Constraint auf `(source, external_id)`
 
 Die vollständigen SQL-Scripts stehen im Abschnitt `Datenbankmodell`.
 
-### Schritt 4: Persistence Consumer implementieren
+### Schritt 4: Entity implementieren
+
+Die Entity mappt die fachlichen Spalten und die PostGIS-Geometrie. `geom` wird als JTS `Point` gespeichert. `raw_payload` ist `jsonb` und wird mit `@JdbcTypeCode(SqlTypes.JSON)` korrekt als JSON gebunden.
+
+```java
+package ch.studior2.buildingpermitmonitor.persistence.entity;
+
+import ch.studior2.buildingpermitmonitor.contracts.geocoding.GeocodingProvider;
+import ch.studior2.buildingpermitmonitor.contracts.geocoding.GeocodingQuality;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDate;
+import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.locationtech.jts.geom.Point;
+
+@Entity
+@Table(name = "building_permits")
+public class BuildingPermitEntity {
+
+  @Id
+  private UUID id;
+
+  private String source;
+
+  @Column(name = "external_id")
+  private String externalId;
+
+  private String title;
+  private String description;
+  private String category;
+  private String status;
+  private String municipality;
+
+  @Column(name = "published_date")
+  private LocalDate publishedDate;
+
+  private String address;
+  private Double latitude;
+  private Double longitude;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "geocoding_provider")
+  private GeocodingProvider geocodingProvider;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "geocoding_quality")
+  private GeocodingQuality geocodingQuality;
+
+  @JdbcTypeCode(SqlTypes.GEOMETRY)
+  @Column(columnDefinition = "geometry(Point,4326)")
+  private Point geom;
+
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "raw_payload", columnDefinition = "jsonb")
+  private String rawPayload;
+
+  // Getter, Setter, equals und hashCode
+}
+```
+
+### Schritt 5: PointFactory implementieren
+
+PostGIS erwartet bei Punkten die Reihenfolge `x, y`, also `longitude, latitude`. Im Event und in der API bleiben die Werte fachlich lesbar als `latitude` und `longitude`.
+
+```java
+package ch.studior2.buildingpermitmonitor.persistence.geometry;
+
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
+import org.springframework.stereotype.Component;
+
+@Component
+public class PointFactory {
+
+  private static final int WGS84_SRID = 4326;
+
+  private final GeometryFactory geometryFactory =
+      new GeometryFactory(new PrecisionModel(), WGS84_SRID);
+
+  public Point create(Double latitude, Double longitude) {
+    if (latitude == null || longitude == null) {
+      return null;
+    }
+
+    Point point = geometryFactory.createPoint(new Coordinate(longitude, latitude));
+    point.setSRID(WGS84_SRID);
+    return point;
+  }
+}
+```
+
+### Schritt 6: Spring Data Repository implementieren
+
+```java
+package ch.studior2.buildingpermitmonitor.persistence.repository;
+
+import ch.studior2.buildingpermitmonitor.persistence.entity.BuildingPermitEntity;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import org.locationtech.jts.geom.Point;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+public interface BuildingPermitRepository extends JpaRepository<BuildingPermitEntity, UUID> {
+
+  Optional<BuildingPermitEntity> findBySourceAndExternalId(String source, String externalId);
+
+  @Query(
+      value =
+          """
+          SELECT *
+          FROM building_permits bp
+          WHERE ST_DWithin(
+              CAST(bp.geom AS geography),
+              CAST(:point AS geography),
+              :radiusMeters
+          )
+          """,
+      nativeQuery = true)
+  List<BuildingPermitEntity> findWithinRadius(
+      @Param("point") Point point,
+      @Param("radiusMeters") double radiusMeters);
+
+  @Query(
+      value =
+          """
+          SELECT *
+          FROM building_permits bp
+          WHERE bp.geom && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+          """,
+      nativeQuery = true)
+  List<BuildingPermitEntity> findVisiblePermits(
+      @Param("minLon") double minLon,
+      @Param("minLat") double minLat,
+      @Param("maxLon") double maxLon,
+      @Param("maxLat") double maxLat);
+}
+```
+
+Wichtig: In Spring Data Queries sollte nicht `:point::geography` verwendet werden. Spring Data kann das als Parameter `point::geography` interpretieren. Robuster ist:
+
+```sql
+CAST(:point AS geography)
+```
+
+### Schritt 7: Persistence Service implementieren
+
+Der Kafka-Consumer enthält bewusst keine Persistenzlogik. Er nimmt Enriched Events entgegen und delegiert an den Service.
 
 ```java
 package ch.studior2.buildingpermitmonitor.persistence.service;
@@ -3496,97 +3797,154 @@ package ch.studior2.buildingpermitmonitor.persistence.service;
 import ch.studior2.buildingpermitmonitor.contracts.event.BuildingPermitEnrichedEvent;
 import ch.studior2.buildingpermitmonitor.contracts.group.KafkaGroupIDs;
 import ch.studior2.buildingpermitmonitor.contracts.topic.KafkaTopics;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 
 @Service
 public class BuildingPermitPersistenceConsumer {
 
-    private final JdbcTemplate jdbcTemplate;
-    private final ObjectMapper objectMapper;
+  private final BuildingPermitPersistenceService service;
 
-    public BuildingPermitPersistenceConsumer(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.objectMapper = objectMapper;
-    }
+  public BuildingPermitPersistenceConsumer(BuildingPermitPersistenceService service) {
+    this.service = service;
+  }
 
-    @KafkaListener(topics = KafkaTopics.ENRICHED, groupId = KafkaGroupIDs.PERSISTENCE)
-    public void persist(BuildingPermitEnrichedEvent event) throws Exception {
-        String rawJson = objectMapper.writeValueAsString(event);
-
-        jdbcTemplate.update("""
-                INSERT INTO building_permits (
-                    id,
-                    source,
-                    external_id,
-                    title,
-                    description,
-                    category,
-                    status,
-                    municipality,
-                    published_date,
-                    address,
-                    latitude,
-                    longitude,
-                    geom,
-                    raw_payload,
-                    created_at,
-                    updated_at
-                )
-                VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    CASE
-                        WHEN ? IS NOT NULL AND ? IS NOT NULL
-                        THEN ST_SetSRID(ST_MakePoint(?, ?), 4326)
-                        ELSE NULL
-                    END,
-                    ?::jsonb,
-                    now(),
-                    now()
-                )
-                ON CONFLICT (source, external_id)
-                DO UPDATE SET
-                    title = EXCLUDED.title,
-                    description = EXCLUDED.description,
-                    category = EXCLUDED.category,
-                    status = EXCLUDED.status,
-                    municipality = EXCLUDED.municipality,
-                    published_date = EXCLUDED.published_date,
-                    address = EXCLUDED.address,
-                    latitude = EXCLUDED.latitude,
-                    longitude = EXCLUDED.longitude,
-                    geom = EXCLUDED.geom,
-                    raw_payload = EXCLUDED.raw_payload,
-                    updated_at = now()
-                """,
-                UUID.nameUUIDFromBytes(event.permitId().getBytes(StandardCharsets.UTF_8)),
-                event.source(),
-                event.externalId(),
-                event.title(),
-                event.description(),
-                event.category(),
-                event.status(),
-                event.municipality(),
-                event.publishedDate(),
-                event.address(),
-                event.latitude(),
-                event.longitude(),
-                event.longitude(),
-                event.latitude(),
-                event.longitude(),
-                event.latitude(),
-                rawJson
-        );
-    }
+  @KafkaListener(topics = KafkaTopics.ENRICHED, groupId = KafkaGroupIDs.PERSISTENCE)
+  public void persist(BuildingPermitEnrichedEvent event) {
+    service.persist(event);
+  }
 }
 ```
 
-### Schritt 5: Datenbank prüfen
+Die eigentliche Persistenzlogik liegt im Service. Sie erzeugt eine stabile UUID, baut den JTS `Point`, speichert den vollständigen Event als JSON und führt ein idempotentes Insert/Update über den natürlichen Business Key `(source, external_id)` aus.
+
+```java
+package ch.studior2.buildingpermitmonitor.persistence.service;
+
+import ch.studior2.buildingpermitmonitor.contracts.event.BuildingPermitEnrichedEvent;
+import ch.studior2.buildingpermitmonitor.persistence.entity.BuildingPermitEntity;
+import ch.studior2.buildingpermitmonitor.persistence.geometry.PointFactory;
+import ch.studior2.buildingpermitmonitor.persistence.repository.BuildingPermitRepository;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
+
+@Service
+public class BuildingPermitPersistenceService {
+
+  private final BuildingPermitRepository repository;
+  private final PointFactory pointFactory;
+  private final JsonMapper jsonMapper;
+
+  public BuildingPermitPersistenceService(
+      BuildingPermitRepository repository,
+      PointFactory pointFactory,
+      JsonMapper jsonMapper) {
+    this.repository = repository;
+    this.pointFactory = pointFactory;
+    this.jsonMapper = jsonMapper;
+  }
+
+  @Transactional
+  public void persist(BuildingPermitEnrichedEvent event) {
+    BuildingPermitEntity entity =
+        repository
+            .findBySourceAndExternalId(event.source(), event.externalId())
+            .orElseGet(BuildingPermitEntity::new);
+
+    entity.setId(UUID.nameUUIDFromBytes(event.permitId().getBytes(StandardCharsets.UTF_8)));
+    entity.setSource(event.source());
+    entity.setExternalId(event.externalId());
+    entity.setTitle(event.title());
+    entity.setDescription(event.description());
+    entity.setCategory(event.category());
+    entity.setStatus(event.status());
+    entity.setMunicipality(event.municipality());
+    entity.setPublishedDate(event.publishedDate());
+    entity.setAddress(event.address());
+    entity.setLatitude(event.latitude());
+    entity.setLongitude(event.longitude());
+    entity.setGeom(pointFactory.create(event.latitude(), event.longitude()));
+    entity.setRawPayload(jsonMapper.writeValueAsString(event));
+
+    repository.save(entity);
+  }
+}
+```
+
+### Schritt 8: Repository-Tests mit Testcontainers
+
+Repository-Tests laufen gegen einen echten PostGIS-Container. Dadurch werden nicht nur Mocks geprüft, sondern auch:
+
+- Flyway-Migrationen
+- Hibernate-Spatial-Mapping
+- `jsonb`-Mapping
+- `ST_DWithin`
+- `ST_MakeEnvelope`
+- SRID `4326`
+
+```java
+package ch.studior2.buildingpermitmonitor.persistence.repository;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+@DataJpaTest
+@Testcontainers
+@DisplayName("BuildingPermitRepository")
+class BuildingPermitRepositoryTest {
+
+  private static final DockerImageName POSTGIS_IMAGE =
+      DockerImageName.parse("postgis/postgis:17-3.5")
+          .asCompatibleSubstituteFor("postgres");
+
+  @Container
+  @ServiceConnection
+  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(POSTGIS_IMAGE);
+
+  @Test
+  @DisplayName("should load repository test context")
+  void shouldLoadRepositoryTestContext() {
+    // Repository tests persist sample entities and execute PostGIS queries.
+  }
+}
+```
+
+Falls der Test durch die echte `BuildingPermitPersistenceApplication` zusätzlich Kafka-Konfiguration lädt, sollte für den Repository-Test eine minimale Test-Konfiguration verwendet werden:
+
+```java
+@ContextConfiguration(classes = BuildingPermitRepositoryTest.TestApplication.class)
+class BuildingPermitRepositoryTest {
+
+  @SpringBootConfiguration
+  @EnableAutoConfiguration
+  @EntityScan(basePackageClasses = BuildingPermitEntity.class)
+  @EnableJpaRepositories(basePackageClasses = BuildingPermitRepository.class)
+  static class TestApplication {}
+}
+```
+
+Bei JPMS-Problemen mit Test-Jars, zum Beispiel mehrfachen Kafka-Modulen auf dem Modulpfad, kann für Surefire pragmatisch der Klassenpfad verwendet werden:
+
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <configuration>
+        <useModulePath>false</useModulePath>
+    </configuration>
+</plugin>
+```
+
+### Schritt 9: Datenbank prüfen
 
 ```bash
 podman exec -it bpm-postgres psql -U app -d building_permits
@@ -3597,6 +3955,18 @@ SELECT municipality, category, count(*)
 FROM building_permits
 GROUP BY municipality, category
 ORDER BY count(*) DESC;
+```
+
+Radius-Suche in SQL:
+
+```sql
+SELECT title, municipality
+FROM building_permits
+WHERE ST_DWithin(
+    CAST(geom AS geography),
+    CAST(ST_SetSRID(ST_MakePoint(8.5631, 47.2918), 4326) AS geography),
+    1000
+);
 ```
 
 ## Schritt-für-Schritt-Anleitung: API Service
@@ -3909,6 +4279,37 @@ CREATE INDEX idx_building_permits_geom
     USING GIST (geom);
 ```
 
+### Flyway im Spring Boot Start und als Maven Plugin
+
+Das Projekt verwendet Flyway in zwei Rollen:
+
+```text
+spring-boot-starter-flyway
+    automatische Migration beim Start des Persistence-Moduls
+
+flyway-maven-plugin
+    manuelle Migrationen, Validierung und Statusabfragen
+```
+
+Beide Varianten dürfen parallel existieren. Der Starter ist Teil der Anwendung. Das Maven Plugin wird nur ausgeführt, wenn es explizit aufgerufen wird.
+
+Beispiele:
+
+```bash
+mvn -pl persistence flyway:info
+mvn -pl persistence flyway:validate
+mvn -pl persistence flyway:migrate
+```
+
+Damit das Maven Plugin eine Datenbankverbindung kennt, müssen `url`, `user` und `password` konfiguriert werden, entweder im Plugin, über Maven Properties oder über die Kommandozeile:
+
+```bash
+mvn -pl persistence flyway:migrate \
+  -Dflyway.url=jdbc:postgresql://localhost:5432/building_permits \
+  -Dflyway.user=app \
+  -Dflyway.password=app
+```
+
 Das vereinfachte fachliche Datenmodell sieht so aus.
 
 ![Simplified Data Model](docs/architecture/simplified-data-model.png)
@@ -4079,7 +4480,6 @@ public final class KafkaGroupIDs {
 package ch.studior2.buildingpermitmonitor.ingestor.kafka;
 
 import ch.studior2.buildingpermitmonitor.contracts.event.BuildingPermitRawEvent;
-import ch.studior2.buildingpermitmonitor.contracts.group.KafkaGroupIDs;
 import ch.studior2.buildingpermitmonitor.contracts.topic.KafkaTopics;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
@@ -4269,85 +4669,82 @@ public class BuildingPermitNormalizer {
 
 ## Persistenz-Service
 
-Der Persistenz-Service konsumiert Enriched Events und speichert sie in PostGIS.
+Der Persistenz-Service konsumiert Enriched Events und speichert sie in PostgreSQL/PostGIS. Die aktuelle Implementierung basiert auf Spring Data JPA, Hibernate Spatial und JTS. JDBC Template wird im Persistence-Modul nicht mehr verwendet.
 
-Für den MVP verwenden wir ein normales JDBC Repository, damit das SQL sichtbar und nachvollziehbar bleibt.
+Der Kafka-Consumer bleibt sehr klein:
 
 ```java
 package ch.studior2.buildingpermitmonitor.persistence.service;
 
+import ch.studior2.buildingpermitmonitor.contracts.event.BuildingPermitEnrichedEvent;
 import ch.studior2.buildingpermitmonitor.contracts.group.KafkaGroupIDs;
 import ch.studior2.buildingpermitmonitor.contracts.topic.KafkaTopics;
-import ch.studior2.buildingpermitmonitor.contracts.event.BuildingPermitEnrichedEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 @Service
 public class BuildingPermitPersistenceConsumer {
 
-    private final JdbcTemplate jdbcTemplate;
-    private final ObjectMapper objectMapper;
+  private final BuildingPermitPersistenceService service;
 
-    public BuildingPermitPersistenceConsumer(
-            JdbcTemplate jdbcTemplate,
-            ObjectMapper objectMapper
-    ) {
-        this.jdbcTemplate = jdbcTemplate;
-        this.objectMapper = objectMapper;
-    }
+  public BuildingPermitPersistenceConsumer(BuildingPermitPersistenceService service) {
+    this.service = service;
+  }
 
-    @KafkaListener(topics = KafkaTopics.ENRICHED, groupId = KafkaGroupIDs.PERSISTENCE)
-    public void persist(BuildingPermitEnrichedEvent event) throws Exception {
-        String rawJson = objectMapper.writeValueAsString(event);
-
-        jdbcTemplate.update("""
-                INSERT INTO building_permits (
-                    id,
-                    source,
-                    external_id,
-                    title,
-                    description,
-                    category,
-                    status,
-                    municipality,
-                    published_date,
-                    address,
-                    raw_payload,
-                    created_at,
-                    updated_at
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb, now(), now())
-                ON CONFLICT (source, external_id)
-                DO UPDATE SET
-                    title = EXCLUDED.title,
-                    description = EXCLUDED.description,
-                    category = EXCLUDED.category,
-                    status = EXCLUDED.status,
-                    municipality = EXCLUDED.municipality,
-                    published_date = EXCLUDED.published_date,
-                    address = EXCLUDED.address,
-                    raw_payload = EXCLUDED.raw_payload,
-                    updated_at = now()
-                """,
-                UUID.nameUUIDFromBytes(event.permitId().getBytes()),
-                event.source(),
-                event.externalId(),
-                event.title(),
-                event.description(),
-                event.category(),
-                event.status(),
-                event.municipality(),
-                event.publishedDate(),
-                event.address(),
-                rawJson
-        );
-    }
+  @KafkaListener(topics = KafkaTopics.ENRICHED, groupId = KafkaGroupIDs.PERSISTENCE)
+  public void persist(BuildingPermitEnrichedEvent event) {
+    service.persist(event);
+  }
 }
 ```
+
+Die Persistenzlogik liegt im `BuildingPermitPersistenceService` und im Spring-Data-Repository:
+
+```java
+public interface BuildingPermitRepository extends JpaRepository<BuildingPermitEntity, UUID> {
+
+  Optional<BuildingPermitEntity> findBySourceAndExternalId(String source, String externalId);
+
+  @Query(
+      value =
+          """
+          SELECT *
+          FROM building_permits bp
+          WHERE ST_DWithin(
+              CAST(bp.geom AS geography),
+              CAST(:point AS geography),
+              :radiusMeters
+          )
+          """,
+      nativeQuery = true)
+  List<BuildingPermitEntity> findWithinRadius(
+      @Param("point") Point point,
+      @Param("radiusMeters") double radiusMeters);
+
+  @Query(
+      value =
+          """
+          SELECT *
+          FROM building_permits bp
+          WHERE bp.geom && ST_MakeEnvelope(:minLon, :minLat, :maxLon, :maxLat, 4326)
+          """,
+      nativeQuery = true)
+  List<BuildingPermitEntity> findVisiblePermits(
+      @Param("minLon") double minLon,
+      @Param("minLat") double minLat,
+      @Param("maxLon") double maxLon,
+      @Param("maxLat") double maxLat);
+}
+```
+
+Wichtige Punkte:
+
+- `source + external_id` ist der natürliche Business Key.
+- `id` wird deterministisch aus `permitId` erzeugt.
+- `geom` wird als `geometry(Point, 4326)` gespeichert.
+- `raw_payload` wird als `jsonb` gespeichert und mit `@JdbcTypeCode(SqlTypes.JSON)` gemappt.
+- Räumliche Abfragen verwenden echte PostGIS-Funktionen.
+- Repository-Tests verwenden Testcontainers mit `postgis/postgis:17-3.5`.
 
 ## Geokodierung
 
@@ -4807,16 +5204,21 @@ Ziel:
 
 ### Schritt 10: Persistenz implementieren
 
-Klasse:
+Klassen:
 
 ```text
 BuildingPermitPersistenceConsumer.java
+BuildingPermitPersistenceService.java
+BuildingPermitEntity.java
+BuildingPermitRepository.java
+PointFactory.java
 ```
 
 Ziel:
 
 - Enriched Event konsumieren
-- Upsert in PostGIS
+- idempotent mit Spring Data JPA speichern
+- PostGIS-Geometrie mit Hibernate Spatial und JTS erzeugen
 - keine Duplikate erzeugen
 
 ### Schritt 11: REST API implementieren
@@ -5292,7 +5694,9 @@ Empfehlung:
 - Hauptpackage öffnen
 - `config`-Packages öffnen
 - `entity`-Packages öffnen
-- weitere Spring-komponentisierte Packages bei Bedarf öffnen
+- `repository`- und `service`-Packages öffnen, falls Spring oder Hibernate per Reflection darauf zugreift
+- DTO- und Event-Packages nur exportieren, nicht unnötig öffnen
+- für Repository-Tests bei JPMS-Problemen notfalls Surefire mit `<useModulePath>false</useModulePath>` konfigurieren
 
 ### WebClient im Enricher
 
