@@ -1,90 +1,90 @@
 # building-permit-monitor
 
-Eine Kafka-basierte Streaming-Anwendung von Studio r2 zur Verarbeitung öffentlicher Baugesuchs- und GIS-Daten.
+A Kafka-based streaming application by Studio r2 for processing public building permit and GIS data.
 
-## Ziel des Projekts
+## Project Goal
 
-Dieses Projekt baut einen kleinen, aber realitätsnahen Event-Streaming-Prototypen. Die Anwendung liest öffentliche Baugesuchs-Daten, erkennt neue oder geänderte Bauvorhaben, publiziert diese als Kafka-Events, normalisiert die Daten, speichert sie in PostGIS und stellt sie über eine REST-API sowie ein wiederverwendbares Angular-Kartenmodul zur Verfügung.
+This project builds a small but realistic event streaming prototype. The application reads public building permit data, detects new or changed permit applications, publishes them as Kafka events, normalizes the data, stores it in PostGIS, and exposes it via a REST API and a reusable Angular map module.
 
-Das Projekt eignet sich als privates Portfolio-Projekt auf GitHub, weil es mehrere relevante Themen kombiniert:
+The project is well suited as a private portfolio project on GitHub because it combines several relevant topics:
 
-- Kafka und Event Streaming
-- Spring Boot 4 und Java 25
-- öffentliche Datenquellen
-- Geodaten und PostGIS
-- REST-API Design
-- wiederverwendbares Angular-Kartenmodul
-- Podman und Container Compose
-- spätere Erweiterbarkeit Richtung Risk Analyzer und Housing Market Stream
+- Kafka and event streaming
+- Spring Boot 4 and Java 25
+- public data sources
+- geodata and PostGIS
+- REST API design
+- reusable Angular map module
+- Podman and Container Compose
+- future extensibility toward a Risk Analyzer and Housing Market Stream
 
-## MVP-Scope
+## MVP Scope
 
-Der erste MVP verwendet bewusst nur den Kanton Zürich als erste Datenquelle. Der Projektname bleibt dennoch allgemein, damit später weitere Kantone und Datenquellen ergänzt werden können.
+The first MVP deliberately uses only Canton of Zurich as the initial data source. The project name remains generic so that additional cantons and data sources can be added later.
 
-### Enthalten im MVP
+### Included in the MVP
 
-Der MVP soll Folgendes können:
+The MVP should be capable of:
 
-1. Baugesuchs-Daten des Kantons Zürich periodisch laden.
-2. Rohdaten als Events nach Kafka schreiben.
-3. Daten normalisieren.
-4. Events in PostGIS speichern.
-5. Eine REST-API bereitstellen.
-6. Baugesuche über ein integrierbares Angular-Kartenmodul anzeigen.
-7. Neue oder geänderte Einträge erkennen.
+1. Periodically loading building permit data from Canton of Zurich.
+2. Writing raw data as events to Kafka.
+3. Normalizing data.
+4. Storing events in PostGIS.
+5. Providing a REST API.
+6. Displaying building permits via an embeddable Angular map module.
+7. Detecting new or changed entries.
 
-### Nicht im MVP enthalten
+### Not Included in the MVP
 
-Folgende Themen sind bewusst spätere Ausbaustufen:
+The following topics are deliberately planned for later expansion stages:
 
-- vollständige Parzellenanalyse
-- Bauzonenanalyse
-- Lärm- und Hochwasserrisiko
-- Immobilienpreis-Analyse
-- Machine Learning
-- mehrkantonale Datenintegration
-- produktionsreifes User Management
-- komplexe Event-Schemata mit Avro oder Protobuf
+- full parcel analysis
+- building zone analysis
+- noise and flood risk
+- real estate price analysis
+- machine learning
+- multi-canton data integration
+- production-ready user management
+- complex event schemas with Avro or Protobuf
 
-## Öffentliche Datenquelle
+## Public Data Source
 
-### Primäre Datenquelle
+### Primary Data Source
 
-Für den MVP verwenden wir den öffentlichen Datensatz:
+For the MVP we use the public dataset:
 
 - Name: Baugesuche im Kanton Zürich
-- Herausgeber: Statistisches Amt Kanton Zürich
+- Publisher: Statistisches Amt Kanton Zürich
 - Portal: https://datenkatalog.statistik.zh.ch/
-- Suchbegriff: `Baugesuche im Kanton Zürich`
-- Formate: CSV, HTML, GPKG
+- Search term: `Baugesuche im Kanton Zürich`
+- Formats: CSV, HTML, GPKG
 
-Der Datensatz enthält Bauvorhaben, die im Kanton Zürich beantragt wurden. Für den Einstieg ist CSV am einfachsten, weil es direkt mit Java geladen und geparst werden kann. Für spätere GIS-Auswertungen ist GPKG interessant, weil es Geometrien und räumliche Informationen strukturierter enthalten kann.
+The dataset contains building projects applied for in Canton of Zurich. For the initial phase, CSV is the simplest format because it can be loaded and parsed directly with Java. For later GIS evaluations, GPKG is interesting because it can contain geometries and spatial information in a more structured way.
 
-### Warum zuerst CSV?
+### Why CSV First?
 
-CSV ist für den Anfang sinnvoll, weil:
+CSV makes sense at the start because:
 
-- es einfach mit Java gelesen werden kann
-- keine GDAL-Abhängigkeit notwendig ist
-- der Kafka-Ingestor schneller implementiert werden kann
-- das Datenmodell zuerst stabilisiert werden kann
+- it can be read easily with Java
+- no GDAL dependency is required
+- the Kafka ingestor can be implemented more quickly
+- the data model can be stabilized first
 
-### Warum später GPKG?
+### Why GPKG Later?
 
-GPKG, also GeoPackage, ist für GIS besser geeignet, weil:
+GPKG, i.e. GeoPackage, is better suited for GIS because:
 
-- Geometrien direkt enthalten sein können
-- räumliche Daten sauberer modelliert sind
-- Import in PostGIS einfacher automatisiert werden kann
-- komplexere Spatial Queries möglich werden
+- geometries can be included directly
+- spatial data is modeled more cleanly
+- import into PostGIS can be automated more easily
+- more complex spatial queries become possible
 
-## Zielarchitektur
+## Target Architecture
 
-Die Anwendung wird bewusst von Anfang an als Microservice-Architektur aufgebaut. Das ist für den MVP etwas aufwändiger als ein modularer Monolith, hat aber einen wichtigen Vorteil: Jeder Service kann später als eigenes GitHub-Projekt veröffentlicht, dokumentiert, getestet und weiterentwickelt werden.
+The application is deliberately built as a microservice architecture from the very beginning. For the MVP this is somewhat more involved than a modular monolith, but it has an important advantage: each service can later be published as its own GitHub project, documented, tested, and developed further.
 
-Die Services kommunizieren nicht direkt über synchrone REST-Aufrufe, sondern primär über Kafka Events. Dadurch bleibt die Architektur lose gekoppelt und nahe an realen Event-Streaming-Systemen.
+The services do not communicate directly via synchronous REST calls, but primarily via Kafka events. This keeps the architecture loosely coupled and close to real-world event streaming systems.
 
-Das folgende PlantUML-Diagramm zeigt die Zielarchitektur mit Datenpipeline, Read-Modell, API und der Integration des wiederverwendbaren Angular-Library-Moduls in die Studio-r2-Web-App.
+The following PlantUML diagram shows the target architecture with data pipeline, read model, API, and the integration of the reusable Angular library module into the Studio-r2 web app.
 
 ![Target Architecture](docs/architecture/target-architecture.png)
 
@@ -125,79 +125,79 @@ studio-r2 Web-App
 web Angular Library
 ```
 
-Das folgende System-Context-Diagramm zeigt die wichtigsten externen Akteure, Datenquellen und Systemgrenzen.
+The following system context diagram shows the most important external actors, data sources, and system boundaries.
 
 ![System Context](docs/architecture/system-context.png)
 
-### Microservice-Schnitt
+### Microservice Decomposition
 
-Der erste sinnvolle Schnitt sieht so aus:
+The first sensible decomposition looks like this:
 
 ```text
 platform
-    lokale Infrastruktur, Podman Compose, Kubernetes Manifeste, Dokumentation
+    local infrastructure, Podman Compose, Kubernetes manifests, documentation
 
 contracts
-    gemeinsame Event-Klassen, DTOs, JSON Schemas, Test-Fixtures
+    shared event classes, DTOs, JSON schemas, test fixtures
 
 ingestor
-    liest externe Datenquellen und publiziert Raw Events
+    reads external data sources and publishes raw events
 
 normalizer
-    normalisiert Raw Events in ein stabiles fachliches Format
+    normalizes raw events into a stable domain format
 
 enricher
-    ergänzt Geodaten, Koordinaten und später Risiko- oder Zonendaten
+    adds geospatial data, coordinates, and later risk or zoning data
 
 persistence
-    speichert enriched Events in PostgreSQL/PostGIS
+    stores enriched events in PostgreSQL/PostGIS
 
 api
-    stellt Daten für Frontend und externe Clients bereit
+    provides data for the frontend and external clients
 
 web
-    Angular 19+ Library mit Leaflet-Kartenkomponenten, die als Dependency in die Studio-r2-Web-App integriert wird
+    Angular 19+ library with Leaflet map components, integrated as a dependency into the Studio r2 web app
 ```
 
-Das folgende Container- und Microservice-Diagramm konkretisiert diesen Schnitt.
+The following container and microservice diagram makes this decomposition concrete.
 
 ![Microservice Architecture](docs/architecture/microservice-architecture.png)
 
-### Warum Microservices für dieses Projekt?
+### Why Microservices for This Project?
 
-Microservices sind hier sinnvoll, weil das Projekt natürlich aus einer Datenpipeline besteht. Jeder Schritt hat eine klare Verantwortung:
+Microservices make sense here because the project naturally consists of a data pipeline. Each step has a clear responsibility:
 
-- Ingestion: Daten holen
-- Normalization: Daten fachlich bereinigen
-- Enrichment: Daten geografisch erweitern
-- Persistence: Daten speichern
-- API: Daten ausliefern
-- Web: Daten visualisieren
+- Ingestion: fetch data
+- Normalization: clean data at the domain level
+- Enrichment: extend data geographically
+- Persistence: store data
+- API: deliver data
+- Web: visualize data
 
-Das ermöglicht kleine, fokussierte Repositories. Ein Recruiter oder Reviewer kann dadurch einzelne Teile gezielt anschauen, zum Beispiel nur den Kafka Ingestor oder nur die PostGIS API.
+This enables small, focused repositories. A recruiter or reviewer can therefore examine individual parts selectively — for example, just the Kafka ingestor or just the PostGIS API.
 
-### Wichtiges Architekturprinzip
+### Key Architecture Principle
 
-Jeder Microservice soll lokal allein testbar sein, aber im Gesamtsystem über Kafka und Podman Compose zusammenarbeiten.
+Each microservice should be independently testable locally, while cooperating in the overall system via Kafka and Podman Compose.
 
-Das bedeutet:
+This means:
 
-- jeder Service hat ein eigenes `README.md`
-- jeder Service hat ein eigenes Maven- oder npm-Projekt
-- jeder Service hat eigene Tests
-- jeder Service kann als Container gebaut werden
-- die Plattform startet alle Services gemeinsam
-- die fachlichen Events liegen zentral in `contracts`
+- each service has its own `README.md`
+- each service has its own Maven or npm project
+- each service has its own tests
+- each service can be built as a container
+- the platform starts all services together
+- the domain events are centrally located in `contracts`
 
-## Ziel-Tech-Stack
+## Target Tech Stack
 
-Das Projekt läuft unter dem Startup/Branding `Studio r2`. Die öffentliche Website ist:
+The project runs under the startup/brand `Studio r2`. The public website is:
 
 ```text
 https://www.studio-r2.ch
 ```
 
-Der technische Ziel-Stack ist bewusst modern gewählt. Für den MVP muss nicht jede Komponente sofort produktionsreif eingesetzt werden. Die Architektur soll aber so vorbereitet werden, dass die Anwendung später sauber Richtung Kubernetes und Google Cloud erweitert werden kann.
+The target tech stack is deliberately modern. Not every component needs to be production-ready from the start for the MVP. However, the architecture should be prepared so that the application can later be cleanly extended toward Kubernetes and Google Cloud.
 
 ### Backend
 
@@ -206,66 +206,66 @@ Der technische Ziel-Stack ist bewusst modern gewählt. Für den MVP muss nicht j
 - Spring Boot 4
 - Spring for Apache Kafka
 - Spring Data JPA
-- Spring WebFlux, falls reaktive HTTP-Clients oder Streaming-Endpunkte sinnvoll werden
-- Flyway für Datenbankmigrationen
-- Jackson für JSON
-- Apache Commons CSV für CSV Parsing
+- Spring WebFlux, if reactive HTTP clients or streaming endpoints become useful
+- Flyway for database migrations
+- Jackson for JSON
+- Apache Commons CSV for CSV parsing
 
 ### Messaging
 
-- Apache Kafka im KRaft-Modus
-- keine ZooKeeper-Abhängigkeit
-- Topics für Raw, Normalized, Enriched und Dead Letter Events
+- Apache Kafka in KRaft mode
+- no ZooKeeper dependency
+- topics for raw, normalized, enriched, and dead letter events
 
-### Datenbank
+### Database
 
 - PostgreSQL
-- PostGIS Extension
-- Flyway Migrationen
-- JPA Entities für fachliche Tabellen
-- Hibernate Spatial für PostGIS-Geometrien
-- JTS (`org.locationtech.jts`) für `Point` und weitere Geometrietypen
-- native SQL nur dort, wo PostGIS-spezifische Queries mit JPA/JPQL weniger klar wären
+- PostGIS extension
+- Flyway migrations
+- JPA entities for domain tables
+- Hibernate Spatial for PostGIS geometries
+- JTS (`org.locationtech.jts`) for `Point` and other geometry types
+- native SQL only where PostGIS-specific queries would be less clear with JPA/JPQL
 
 ### Frontend
 
 - npm
 - Angular 19+
-- Angular Library Package statt eigenständiger Standalone-App
-- Leaflet für Kartenvisualisierung
-- Integration als Dependency in die bestehende Studio-r2-Web-App
+- Angular Library Package rather than a standalone app
+- Leaflet for map visualization
+- integration as a dependency into the existing Studio-r2 web app
 
-### Lokale Infrastruktur
+### Local Infrastructure
 
 - Podman
-- podman compose oder docker-compose-kompatible Compose-Dateien
-- Kafka im KRaft-Modus
+- podman compose or docker-compose-compatible Compose files
+- Kafka in KRaft mode
 - PostgreSQL/PostGIS
-- Conduktor Console als lokale Kafka-UI
+- Conduktor Console as a local Kafka UI
 
-### Deployment-Ziel
+### Deployment Target
 
 - Kubernetes
 - Google Cloud
-- Zielregion für produktionsähnliches Deployment: `europe-west6` Zürich
+- target region for production-like deployment: `europe-west6` Zurich
 
-Für den MVP reicht lokal eine Compose-Umgebung mit Podman. Kubernetes und Google Cloud werden zuerst vorbereitet, aber nicht zwingend im ersten Schritt produktiv betrieben.
+For the MVP, a local Compose environment with Podman is sufficient. Kubernetes and Google Cloud will be prepared first, but do not necessarily need to be operated in production in the first step.
 
-### Java Package Naming und Maven Coordinates
+### Java Package Naming and Maven Coordinates
 
-Die Maven GroupID ist für alle Java-Module identisch:
+The Maven GroupID is identical for all Java modules:
 
 ```text
 ch.studio-r2.building-permit-monitor
 ```
 
-Diese GroupID beschreibt die fachliche Zugehörigkeit der Artefakte. Da Java-Packages und Java-9-Modulnamen keine Bindestriche enthalten dürfen, verwenden wir dafür eine Java-kompatible Schreibweise:
+This GroupID describes the domain affiliation of the artifacts. Since Java packages and Java 9 module names may not contain hyphens, we use a Java-compatible spelling for them:
 
 ```text
 ch.studior2.buildingpermitmonitor
 ```
 
-Jeder Microservice erhält ein eigenes Package unterhalb dieses Basis-Packages:
+Each microservice receives its own package beneath this base package:
 
 ```text
 ch.studior2.buildingpermitmonitor.contracts
@@ -276,7 +276,7 @@ ch.studior2.buildingpermitmonitor.persistence
 ch.studior2.buildingpermitmonitor.api
 ```
 
-Beispiel für den Ingestor:
+Example for the ingestor:
 
 ```text
 ch.studior2.buildingpermitmonitor.ingestor.BuildingPermitIngestorApplication
@@ -286,7 +286,7 @@ ch.studior2.buildingpermitmonitor.ingestor.source
 ch.studior2.buildingpermitmonitor.ingestor.service
 ```
 
-Beispiel für die API:
+Example for the API:
 
 ```text
 ch.studior2.buildingpermitmonitor.api.BuildingPermitApiApplication
@@ -298,9 +298,9 @@ ch.studior2.buildingpermitmonitor.api.dto
 
 ### Java 9 Module Strategy
 
-Die Java-Services werden als Java-9-Module aufgebaut. Jedes Maven-Projekt enthält deshalb eine eigene `module-info.java`. Die Modulnamen orientieren sich an den Java-Packages und bleiben bewusst ohne Bindestriche.
+The Java services are structured as Java 9 modules. Each Maven project therefore contains its own `module-info.java`. The module names follow the Java packages and deliberately avoid hyphens.
 
-Empfohlene Modulnamen:
+Recommended module names:
 
 ```text
 ch.studior2.buildingpermitmonitor.contracts
@@ -311,13 +311,13 @@ ch.studior2.buildingpermitmonitor.persistence
 ch.studior2.buildingpermitmonitor.api
 ```
 
-Die Maven GroupID bleibt trotzdem:
+The Maven GroupID remains:
 
 ```text
 ch.studio-r2.building-permit-monitor
 ```
 
-Beispiel für `contracts/src/main/java/module-info.java`:
+Example for `contracts/src/main/java/module-info.java`:
 
 ```java
 module ch.studior2.buildingpermitmonitor.contracts {
@@ -330,7 +330,7 @@ module ch.studior2.buildingpermitmonitor.contracts {
 }
 ```
 
-Beispiel für `ingestor/src/main/java/module-info.java`:
+Example for `ingestor/src/main/java/module-info.java`:
 
 ```java
 module ch.studior2.buildingpermitmonitor.ingestor {
@@ -346,7 +346,7 @@ module ch.studior2.buildingpermitmonitor.ingestor {
 }
 ```
 
-Beispiel für `api/src/main/java/module-info.java`:
+Example for `api/src/main/java/module-info.java`:
 
 ```java
 module ch.studior2.buildingpermitmonitor.api {
@@ -363,13 +363,12 @@ module ch.studior2.buildingpermitmonitor.api {
 }
 ```
 
-Hinweis: Spring Boot funktioniert mit Java-Modulen, benötigt aber für Reflection gezielte `opens`-Direktiven. Deshalb werden nur die Spring-Komponenten-Packages geöffnet, während fachliche DTOs und Event-Klassen explizit exportiert werden.
+Note: Spring Boot works with Java modules, but requires targeted `opens` directives for reflection. For this reason, only the Spring component packages are opened, while domain DTOs and event classes are explicitly exported.
+## Repository Structure
 
-## Repository-Struktur
+Since individual microservices are intended to be published separately on GitHub at a later stage, it is advisable not to create a single large repository as the sole structure. A better approach is a combination of multiple service repositories plus a platform repository.
 
-Da einzelne Microservices später separat auf GitHub veröffentlicht werden sollen, empfiehlt es sich kein einzelnes grosses Repository als einzige Struktur anzulegen. Besser ist eine Kombination aus mehreren Service-Repositories plus einem Plattform-Repository.
-
-### Empfohlene GitHub-Repositories
+### Recommended GitHub Repositories
 
 ```text
 studio-r2-building-permit-monitor/
@@ -383,11 +382,11 @@ studio-r2-building-permit-monitor/
 `-- web
 ```
 
-Dabei ist `platform` das Repository, das alles zusammenführt. Die anderen Repositories können einzeln präsentiert werden.
+Here, `platform` is the repository that brings everything together. The other repositories can be presented individually.
 
 ### Repository: platform
 
-Dieses Repository enthält keine fachliche Business-Logik. Es beschreibt und startet das Gesamtsystem.
+This repository contains no domain-specific business logic. It describes and starts the overall system.
 
 ```text
 platform/
@@ -416,11 +415,11 @@ platform/
     `-- reset-local-stack.sh
 ```
 
-Dieses Repository ist ideal als Hauptlink im Portfolio.
+This repository is ideal as the main link in a portfolio.
 
 ### Repository: contracts
 
-Dieses Repository enthält gemeinsame Event-Definitionen und Testdaten. Dadurch müssen Event-Klassen nicht in jedem Service kopiert werden.
+This repository contains shared event definitions and test data. This means event classes do not need to be copied into every service.
 
 ```text
 contracts/
@@ -447,7 +446,7 @@ contracts/
     `-- enriched-building-permit-event.json
 ```
 
-Maven Koordinaten:
+Maven coordinates:
 
 ```xml
 <groupId>ch.studio-r2.building-permit-monitor</groupId>
@@ -481,12 +480,12 @@ ingestor/
     `-- data-source-kt-zh.md
 ```
 
-Verantwortung:
+Responsibilities:
 
-- Datenquelle pollen
-- CSV herunterladen
-- neue oder geänderte Einträge erkennen
-- Raw Events nach Kafka schreiben
+- Poll data source
+- Download CSV
+- Detect new or changed entries
+- Write raw events to Kafka
 
 ### Repository: normalizer
 
@@ -509,12 +508,12 @@ normalizer/
 |   `-- test/
 ```
 
-Verantwortung:
+Responsibilities:
 
-- Raw Events konsumieren
-- Felder vereinheitlichen
-- Kategorien und Statuswerte normalisieren
-- Normalized Events publizieren
+- Consume raw events
+- Unify fields
+- Normalize categories and status values
+- Publish normalized events
 
 ### Repository: enricher
 
@@ -537,12 +536,12 @@ enricher/
 |   `-- test/
 ```
 
-Verantwortung:
+Responsibilities:
 
-- Adressen geokodieren
-- Koordinaten ergänzen
-- später Zonen, Lärm, Hochwasser oder ÖV-Nähe ergänzen
-- Enriched Events publizieren
+- Geocode addresses
+- Add coordinates
+- Later add zones, noise, flood risk, or proximity to public transport
+- Publish enriched events
 
 ### Repository: persistence
 
@@ -569,11 +568,11 @@ persistence/
 |   `-- test/
 ```
 
-Verantwortung:
+Responsibilities:
 
-- Enriched Events konsumieren
-- Idempotent in PostgreSQL/PostGIS speichern
-- Flyway Migrationen verwalten
+- Consume enriched events
+- Store idempotently in PostgreSQL/PostGIS
+- Manage Flyway migrations
 
 ### Repository: api
 
@@ -597,11 +596,11 @@ api/
 |   `-- test/
 ```
 
-Verantwortung:
+Responsibilities:
 
-- REST API für Karte und externe Clients bereitstellen
-- Filter nach Gemeinde, Datum, Kategorie und Bounding Box
-- später Streaming-Endpunkte mit WebFlux oder Server-Sent Events
+- Provide REST API for the map and external clients
+- Filter by municipality, date, category, and bounding box
+- Later add streaming endpoints with WebFlux or Server-Sent Events
 
 ### Repository: web
 
@@ -626,17 +625,17 @@ web/
 `-- dist/
 ```
 
-Verantwortung:
+Responsibilities:
 
-- Angular 19+ Library Package statt eigenständiger Applikation
-- Leaflet-Kartenkomponenten für Baugesuche
-- API-Client, Konfiguration und TypeScript-Modelle
-- Filter und Detail-Popups als wiederverwendbare Komponenten
-- Integration als npm-Dependency in die bestehende Studio-r2-Web-App
+- Angular 19+ library package rather than a standalone application
+- Leaflet map components for building permits
+- API client, configuration, and TypeScript models
+- Filters and detail popups as reusable components
+- Integration as an npm dependency into the existing Studio-r2 web app
 
-### Wann separate Repositories sinnvoll sind
+### When Separate Repositories Make Sense
 
-Nicht jeder Microservice muss sofort öffentlich sein. Für den Anfang reichen diese vier Repositories:
+Not every microservice needs to be public immediately. For the start, these four repositories are sufficient:
 
 ```text
 platform
@@ -645,23 +644,22 @@ ingestor
 api
 ```
 
-Danach können `normalizer`, `enricher`, `persistence` und `web` folgen.
+After that, `normalizer`, `enricher`, `persistence`, and `web` can follow.
+## Local Development Environment
 
-## Lokale Entwicklungsumgebung
+### Prerequisites
 
-### Voraussetzungen
-
-Installiert sein sollten:
+The following should be installed:
 
 - Java 25
 - Maven 3.9+
 - npm
 - Podman
-- podman compose oder podman-compose
+- podman compose or podman-compose
 - optional Angular CLI
 - optional psql
 
-Prüfen:
+Verify:
 
 ```bash
 java --version
@@ -670,11 +668,11 @@ podman --version
 podman compose version
 ```
 
-## Container Compose mit Podman
+## Container Compose with Podman
 
-Für den MVP starten wir Kafka, PostGIS und Conduktor Console lokal mit Podman. Die Datei bleibt bewusst `docker-compose.yml`, weil Compose-Dateien von Docker und Podman verstanden werden. Conduktor ersetzt dabei die einfache Kafka-UI und dient als komfortablere Oberfläche für Topics, Consumer Groups, Messages und später Schema Registry oder Kafka Connect.
+For the MVP we start Kafka, PostGIS, and Conduktor Console locally with Podman. The file is intentionally kept as `docker-compose.yml`, because Compose files are understood by both Docker and Podman. Conduktor replaces the simple Kafka UI and serves as a more convenient interface for topics, consumer groups, messages, and later schema registry or Kafka Connect.
 
-Datei: `docker-compose.yml`
+File: `docker-compose.yml`
 
 ```yaml
 services:
@@ -752,7 +750,7 @@ networks:
     driver: bridge
 ```
 
-Datei: `conduktor/platform-config.yaml`
+File: `conduktor/platform-config.yaml`
 
 ```yaml
 organization:
@@ -777,51 +775,51 @@ kafka:
       bootstrapServers: kafka:29092
 ```
 
-Wichtig ist der interne Kafka Listener `kafka:29092`. Der Host verwendet weiterhin `localhost:9092`, aber Conduktor läuft selbst im Compose-Netzwerk und muss Kafka deshalb über den Servicenamen `kafka` erreichen.
+The internal Kafka listener `kafka:29092` is important. The host continues to use `localhost:9092`, but Conduktor itself runs within the Compose network and must therefore reach Kafka via the service name `kafka`.
 
-Starten:
+Start:
 
 ```bash
 podman compose up -d
 ```
 
-Status prüfen:
+Check status:
 
 ```bash
 podman compose ps
 ```
 
-Das lokale Deployment mit Podman Compose sieht damit wie folgt aus.
+The local deployment with Podman Compose looks as follows.
 
 ![Local Podman Compose Deployment](docs/architecture/local-podman-compose-deployment.png)
 
-Conduktor Console öffnen:
+Open Conduktor Console:
 
 ```text
 http://localhost:8085
 ```
 
-Login für die lokale Entwicklungsumgebung:
+Login for the local development environment:
 
 ```text
 admin@studio-r2.ch / admin
 ```
 
-PostgreSQL testen:
+Test PostgreSQL:
 
 ```bash
 podman exec -it bpm-postgres psql -U app -d building_permits
 ```
 
-Innerhalb von psql:
+Within psql:
 
 ```sql
 SELECT PostGIS_Version();
 ```
 
-## Erklärung der wichtigsten Kafka- und Conduktor-Konfigurationen
+## Explanation of the Key Kafka and Conduktor Configurations
 
-### Kafka Listener-Konfiguration
+### Kafka Listener Configuration
 
 ```yaml
 KAFKA_LISTENERS: PLAINTEXT://:9092,INTERNAL://:29092,CONTROLLER://:9093
@@ -829,32 +827,32 @@ KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,INTERNAL://kafka:29092
 ```
 
 - `PLAINTEXT://:9092`
-  - Zugriff vom Host-System.
+  - Access from the host system.
 
 - `INTERNAL://:29092`
-  - Interner Listener für Container innerhalb des Compose-Netzwerks.
+  - Internal listener for containers within the Compose network.
 
 - `CONTROLLER://:9093`
-  - Interner KRaft-Controller-Listener.
+  - Internal KRaft controller listener.
 
-### KRaft-Modus
+### KRaft Mode
 
 ```yaml
 KAFKA_PROCESS_ROLES: broker,controller
 KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
 ```
 
-Diese Konfiguration aktiviert Kafka ohne ZooKeeper.
+This configuration runs Kafka without ZooKeeper.
 
-### Warum zwei PostgreSQL-Container?
+### Why Two PostgreSQL Containers?
 
 - `postgres`
-  - Fachliche Datenbank mit PostGIS.
+  - Application database with PostGIS.
 
 - `conduktor-postgres`
-  - Separate Datenbank für Conduktor Console.
+  - Separate database for the Conduktor Console.
 
-### Kafka-Clusterdefinition
+### Kafka Cluster Definition
 
 ```yaml
 kafka:
@@ -864,9 +862,9 @@ kafka:
       bootstrapServers: kafka:29092
 ```
 
-Conduktor verwendet `kafka:29092`, weil die Verbindung innerhalb des Compose-Netzwerks erfolgt.
+Conduktor uses `kafka:29092` because the connection is made within the Compose network.
 
-### PostgreSQL-Verbindung prüfen
+### Verify the PostgreSQL Connection
 
 ```bash
 podman exec -it bpm-conduktor-postgres   psql -U conduktor -d conduktor -c '\l'
@@ -874,7 +872,7 @@ podman exec -it bpm-conduktor-postgres   psql -U conduktor -d conduktor -c '\l'
 
 ## Kafka Topics
 
-Für den MVP verwenden wir diese Topics:
+For the MVP we use the following topics:
 
 ```text
 building-permit.raw
@@ -885,7 +883,7 @@ building-permit.normalized.dlq
 building-permit.enriched.dlq
 ```
 
-Später können ergänzt werden:
+The following may be added later:
 
 ```text
 building-permit.statistics.daily
@@ -893,11 +891,11 @@ building-permit.statistics.municipality
 building-permit.alerts
 ```
 
-Der folgende Kafka-Event-Flow zeigt, wie Raw, Normalized und Enriched Events durch die Pipeline laufen.
+The following Kafka event flow shows how Raw, Normalized, and Enriched events travel through the pipeline.
 
 ![Kafka Event Flow](docs/architecture/kafka-event-flow.png)
 
-Topics manuell erstellen:
+Create topics manually:
 
 ```bash
 podman exec -it bpm-kafka /opt/kafka/bin/kafka-topics.sh \
@@ -959,7 +957,7 @@ podman exec -it bpm-kafka /opt/kafka/bin/kafka-topics.sh \
   --config retention.ms=604800000
 ```
 
-Topics anzeigen:
+List topics:
 
 ```bash
 podman exec -it bpm-kafka /opt/kafka/bin/kafka-topics.sh \
@@ -967,11 +965,11 @@ podman exec -it bpm-kafka /opt/kafka/bin/kafka-topics.sh \
   --list
 ```
 
-### Dead-Letter-Topics und zentrale Fehlerbehandlung
+### Dead-Letter Topics and Central Error Handling
 
-Die DLQ-Topics werden nicht direkt von Kafka verwendet. Sie werden erst aktiv, wenn die Spring-Kafka-Consumer einen gemeinsamen `DefaultErrorHandler` verwenden. Diese Konfiguration liegt im `contracts`-Modul und kann von `normalizer`, `enricher` und `persistence` importiert werden.
+The DLQ topics are not used directly by Kafka. They become active only when the Spring Kafka consumers use a shared `DefaultErrorHandler`. This configuration resides in the `contracts` module and can be imported by `normalizer`, `enricher`, and `persistence`.
 
-Die Zuordnung erfolgt anhand des ursprünglichen Input-Topics:
+Routing is based on the original input topic:
 
 ```text
 building-permit.raw        -> building-permit.raw.dlq
@@ -979,9 +977,9 @@ building-permit.normalized -> building-permit.normalized.dlq
 building-permit.enriched   -> building-permit.enriched.dlq
 ```
 
-Dadurch bleibt sichtbar, in welchem Verarbeitungsschritt ein Event gescheitert ist. Der `exception`-Parameter des Topic-Resolvers wird bewusst noch nicht verwendet; für den MVP reicht die Zuordnung über `record.topic()`.
+This keeps it visible at which processing step an event failed. The `exception` parameter of the topic resolver is intentionally not used yet; for the MVP, routing via `record.topic()` is sufficient.
 
-Beispiel im `contracts`-Modul:
+Example in the `contracts` module:
 
 ```java
 package ch.studior2.buildingpermitmonitor.contracts.config;
@@ -1017,7 +1015,7 @@ public class KafkaDlqConfiguration {
 }
 ```
 
-Falls die Package-Struktur der Services die `contracts`-Konfiguration nicht automatisch scannt, wird sie in den Kafka-konsumierenden Services explizit importiert:
+If the package structure of the services does not automatically scan the `contracts` configuration, it is explicitly imported in the Kafka-consuming services:
 
 ```java
 @Import(KafkaDlqConfiguration.class)
@@ -1029,28 +1027,27 @@ public class BuildingPermitNormalizerApplication {
 }
 ```
 
-Dasselbe Prinzip gilt für `enricher` und `persistence`. Der `ingestor` produziert nur Raw Events und benötigt diese Consumer-DLQ-Konfiguration nicht.
+The same principle applies to `enricher` and `persistence`. The `ingestor` only produces Raw events and does not require this consumer DLQ configuration.
+## Creating the Spring Boot Microservices
 
-## Spring Boot Microservices erstellen
+This section deliberately replaces the idea of a single `backend` project. The target architecture consists of several small Spring Boot applications that communicate with one another via Kafka. Only `contracts` is a shared Java library. `platform` contains the local infrastructure and is not a Spring Boot application.
 
-Dieser Abschnitt ersetzt bewusst die Idee eines einzigen `backend`-Projekts. Die Zielarchitektur besteht aus mehreren kleinen Spring-Boot-Applikationen, die über Kafka miteinander kommunizieren. Nur `contracts` ist eine gemeinsame Java-Bibliothek. `platform` enthält die lokale Infrastruktur und ist keine Spring-Boot-Anwendung.
+### Module Overview
 
-### Übersicht der Module
+| Module        | Type                        | Spring Boot? | Responsibility                                                                  |
+| ------------- | --------------------------- | -----------: | ------------------------------------------------------------------------------- |
+| `platform`    | Infrastructure repository   |           No | Podman Compose, Kafka, PostGIS, Conduktor, scripts, documentation               |
+| `contracts`   | Java library                |           No | Shared event classes, DTOs, topic constants, JSON schemas                       |
+| `ingestor`    | Microservice                |          Yes | Load external data source and publish raw events                                |
+| `normalizer`  | Microservice                |          Yes | Consume raw events and normalize them according to the domain model             |
+| `enricher`    | Microservice                |          Yes | Add geodata, coordinates, and future risk data                                  |
+| `persistence` | Microservice                |          Yes | Consume enriched events and write them to PostGIS                               |
+| `api`         | Microservice                |          Yes | Provide REST API for the frontend and external clients                          |
+| `web`         | Angular library             |           No | Reusable map module for integration into the studio-r2 web app                  |
 
-| Modul         | Typ                      | Spring Boot? | Hauptaufgabe                                                            |
-| ------------- | ------------------------ | -----------: | ----------------------------------------------------------------------- |
-| `platform`    | Infrastruktur-Repository |         Nein | Podman Compose, Kafka, PostGIS, Conduktor, Scripts, Dokumentation       |
-| `contracts`   | Java Library             |         Nein | Gemeinsame Event-Klassen, DTOs, Topic-Konstanten, JSON-Schemas          |
-| `ingestor`    | Microservice             |           Ja | Externe Datenquelle laden und Raw Events publizieren                    |
-| `normalizer`  | Microservice             |           Ja | Raw Events konsumieren und fachlich normalisieren                       |
-| `enricher`    | Microservice             |           Ja | Geodaten, Koordinaten und spätere Risikodaten ergänzen                  |
-| `persistence` | Microservice             |           Ja | Enriched Events konsumieren und nach PostGIS schreiben                  |
-| `api`         | Microservice             |           Ja | REST API für Frontend und externe Clients bereitstellen                 |
-| `web`         | Angular Library          |         Nein | Wiederverwendbares Kartenmodul für Integration in die Studio-r2-Web-App |
+### Communication Principle
 
-### Kommunikationsprinzip
-
-Die Services rufen sich nicht gegenseitig synchron per REST auf. Die fachliche Pipeline läuft primär asynchron über Kafka.
+The services do not call one another synchronously via REST. The domain pipeline runs primarily asynchronously over Kafka.
 
 ```text
 ingestor
@@ -1077,9 +1074,9 @@ web
     -> map view
 ```
 
-Dadurch bleibt jeder Service klein, testbar und unabhängig deploybar. Kafka bildet die Integrationsschicht, PostgreSQL/PostGIS ist das Query- und Read-Modell für die API.
+This keeps each service small, testable, and independently deployable. Kafka forms the integration layer; PostgreSQL/PostGIS is the query and read model for the API.
 
-### Aktueller Event-Flow inklusive DLQs
+### Current Event Flow Including DLQs
 
 ```text
 Open Data CSV
@@ -1091,19 +1088,19 @@ ingestor
 building-permit.raw
     |
     v
-normalizer  -- Fehler --> building-permit.raw.dlq
+normalizer  -- error --> building-permit.raw.dlq
     |
     v
 building-permit.normalized
     |
     v
-enricher    -- Fehler --> building-permit.normalized.dlq
+enricher    -- error --> building-permit.normalized.dlq
     |
     v
 building-permit.enriched
     |
     v
-persistence -- Fehler --> building-permit.enriched.dlq
+persistence -- error --> building-permit.enriched.dlq
     |
     v
 PostgreSQL/PostGIS
@@ -1115,17 +1112,17 @@ api
 web Angular Library
 ```
 
-Die DLQ-Zuordnung wird zentral im `contracts`-Modul über `KafkaDlqConfiguration` definiert.
+The DLQ mapping is defined centrally in the `contracts` module via `KafkaDlqConfiguration`.
 
-### Gemeinsame Maven-Konventionen
+### Common Maven Conventions
 
-Alle Java-Repositories verwenden dieselbe GroupID:
+All Java repositories use the same groupId:
 
 ```xml
 <groupId>ch.studio-r2.building-permit-monitor</groupId>
 ```
 
-Die ArtifactIDs entsprechen den Repository-Namen:
+The artifactIds correspond to the repository names:
 
 ```text
 contracts
@@ -1136,7 +1133,7 @@ persistence
 api
 ```
 
-Die Java-Packages verwenden keine Bindestriche:
+Java packages do not use hyphens:
 
 ```text
 ch.studior2.buildingpermitmonitor.contracts
@@ -1147,24 +1144,24 @@ ch.studior2.buildingpermitmonitor.persistence
 ch.studior2.buildingpermitmonitor.api
 ```
 
-## Gemeinsames Root Parent `pom.xml`
+## Shared Root Parent `pom.xml`
 
-Für das gesamte Multi-Module-Projekt empfiehlt sich ein zentrales Root-Parent-`pom.xml`.  
-Alle Java-Module erben davon und verwenden dadurch identische Versionen, Plugin-Konfigurationen, Build-Regeln und Teststandards.
+A central root parent `pom.xml` is recommended for the entire multi-module project.  
+All Java modules inherit from it and thereby use identical versions, plugin configurations, build rules, and testing standards.
 
-Vorteile:
+Advantages:
 
-- zentrale Verwaltung von Java- und Spring-Versionen
-- zentrale Verwaltung von JUnit 6
-- identische Maven-Plugin-Versionen in allen Services
-- gemeinsame Spotless-Formatierung
-- zentrale JaCoCo-Konfiguration
-- gemeinsame Surefire/Failsafe-Konfiguration
-- reproduzierbare Builds
-- vereinfachte GitHub-Actions-Pipelines
-- konsistente Build-Qualität in allen Microservices
+- central management of Java and Spring versions
+- central management of JUnit 6
+- identical Maven plugin versions across all services
+- shared Spotless formatting
+- central JaCoCo configuration
+- shared Surefire/Failsafe configuration
+- reproducible builds
+- simplified GitHub Actions pipelines
+- consistent build quality across all microservices
 
-Empfohlene Struktur:
+Recommended structure:
 
 ```text
 building-permit-monitor/
@@ -1378,9 +1375,9 @@ building-permit-monitor/
 </project>
 ```
 
-### Beispiel eines Submoduls
+### Example of a Submodule
 
-Beispiel `ingestor/pom.xml`:
+Example `ingestor/pom.xml`:
 
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -1417,69 +1414,69 @@ Beispiel `ingestor/pom.xml`:
 </project>
 ```
 
-### Build des gesamten Projekts
+### Building the Entire Project
 
-Das gesamte Projekt kann danach zentral gebaut werden:
+The entire project can then be built centrally:
 
 ```bash
 mvn clean verify
 ```
 
-Nur ein einzelnes Modul bauen:
+Build only a single module:
 
 ```bash
 mvn -pl ingestor clean verify
 ```
 
-Build inklusive aller abhängigen Module:
+Build including all dependent modules:
 
 ```bash
 mvn -pl api -am clean verify
 ```
 
-### Automatische Code-Formatierung
+### Automatic Code Formatting
 
-Spotless kann zentral verwendet werden:
+Spotless can be used centrally:
 
 ```bash
 mvn spotless:apply
 ```
 
-Nur prüfen:
+Check only:
 
 ```bash
 mvn spotless:check
 ```
 
-### Testen
+### Testing
 
-Alle Unit-Tests:
+All unit tests:
 
 ```bash
 mvn test
 ```
 
-Alle Tests inklusive Integrationstests:
+All tests including integration tests:
 
 ```bash
 mvn verify
 ```
 
-### Erweiterte Spotless-Konfiguration
+### Extended Spotless Configuration
 
-Für konsistente Formatierung über alle Java-Module hinweg wird zentral `Spotless` verwendet.  
-Die Konfiguration kombiniert:
+For consistent formatting across all Java modules, `Spotless` is used centrally.  
+The configuration combines:
 
 - Google Java Format
-- automatische Import-Bereinigung
-- konsistente Import-Reihenfolge
-- Annotation-Formatierung
-- POM-Sorting
-- Entfernen von Trailing Whitespace
-- erzwungenes Newline am Dateiende
-- Javadoc-Formatierung
+- automatic import cleanup
+- consistent import ordering
+- annotation formatting
+- POM sorting
+- removal of trailing whitespace
+- enforced newline at end of file
+- Javadoc formatting
 
-Empfohlene zentrale Konfiguration im Root Parent `pom.xml`:
+Recommended central configuration in the root parent `pom.xml`:
 
 ```xml
 <plugin>
@@ -1555,15 +1552,15 @@ Empfohlene zentrale Konfiguration im Root Parent `pom.xml`:
 </plugin>
 ```
 
-#### Lokale Formatierung ausführen
+#### Run Formatting Locally
 
-Automatische Formatierung:
+Automatic formatting:
 
 ```bash
 mvn spotless:apply
 ```
 
-Nur prüfen:
+Check only:
 
 ```bash
 mvn spotless:check
@@ -1571,33 +1568,32 @@ mvn spotless:check
 
 #### CI/CD
 
-In GitHub Actions sollte typischerweise nur geprüft werden:
+In GitHub Actions, it is typically sufficient to check only:
 
 ```bash
 mvn spotless:check
 ```
 
-Dadurch verhindert man unerwartete automatische Änderungen während des Builds.
+This prevents unexpected automatic changes during the build.
+## Common Development Standards for All Modules
 
-## Gemeinsame Entwicklungsstandards für alle Module
+### Log4J2 Configuration and Setup
 
-### Log4J2 Konfiguration und Setup
+All Spring Boot services should log consistently via SLF4J. Log4J2 is used as the concrete logging implementation. This keeps the classes independent of the logging implementation, while format, log level, and appenders can be configured centrally.
 
-Alle Spring-Boot-Services sollen konsistent über SLF4J loggen. Als konkrete Logging-Implementierung verwenden wir Log4J2. Dadurch bleiben die Klassen unabhängig von der Logging-Implementierung, während Format, Log-Level und Appender zentral konfiguriert werden können.
-
-Wichtiges Prinzip:
+Key principle:
 
 ```text
 Application Code -> SLF4J API -> Log4J2 Runtime
 ```
 
-Die Java-Klassen verwenden deshalb `org.slf4j.Logger` und `org.slf4j.LoggerFactory`. Log4J2 wird nur über Maven und `log4j2-spring.xml` konfiguriert.
+The Java classes therefore use `org.slf4j.Logger` and `org.slf4j.LoggerFactory`. Log4J2 is only configured via Maven and `log4j2-spring.xml`.
 
-#### Maven-Konfiguration
+#### Maven Configuration
 
-In jedem Spring-Boot-Service wird der Standard-Logging-Starter ausgeschlossen und `spring-boot-starter-log4j2` ergänzt.
+In each Spring Boot service, the default logging starter is excluded and `spring-boot-starter-log4j2` is added.
 
-Beispiel für ein Spring-Boot-Modul:
+Example for a Spring Boot module:
 
 ```xml
 <dependency>
@@ -1617,11 +1613,11 @@ Beispiel für ein Spring-Boot-Modul:
 </dependency>
 ```
 
-Falls ein Modul andere Spring-Boot-Starter verwendet, zum Beispiel `spring-boot-starter-web`, `spring-boot-starter-actuator` oder `spring-boot-starter-data-jpa`, wird `spring-boot-starter-logging` dort ebenfalls ausgeschlossen, falls es transitiv eingezogen wird.
+If a module uses other Spring Boot starters, for example `spring-boot-starter-web`, `spring-boot-starter-actuator`, or `spring-boot-starter-data-jpa`, `spring-boot-starter-logging` is likewise excluded there if it is pulled in transitively.
 
 #### `log4j2-spring.xml`
 
-Datei:
+File:
 
 ```text
 src/main/resources/log4j2-spring.xml
@@ -1658,27 +1654,27 @@ src/main/resources/log4j2-spring.xml
 </Configuration>
 ```
 
-#### Verwendung im Code
+#### Usage in Code
 
-In Service-Klassen wird ein statischer Logger definiert:
+Service classes define a static logger:
 
 ```java
 private static final Logger LOG = LoggerFactory.getLogger(MyService.class);
 ```
 
-Danach werden fachlich relevante Ereignisse geloggt:
+Business-relevant events are then logged:
 
 ```java
 LOG.info("Skipping duplicate raw event: {}:{}", event.id(), event.publicationNumber());
 ```
 
-Für erwartbare fachliche Zustände reicht normalerweise `INFO`. Technische Fehler, die eine Verarbeitung verhindern, gehören auf `ERROR`. Sehr detaillierte Diagnoseinformationen gehören auf `DEBUG`.
+Expected business states are normally fine at `INFO`. Technical errors that prevent processing belong at `ERROR`. Very detailed diagnostic information belongs at `DEBUG`.
 
 ### `.gitignore`
 
-Die Java-Module `contracts`, `ingestor`, `normalizer`, `enricher`, `persistence` und `api` erhalten jeweils ein eigenes `.gitignore`. Das verhindert, dass IDE-Dateien, Build-Artefakte, lokale Logs oder temporäre Dateien versehentlich ins Repository gelangen.
+The Java modules `contracts`, `ingestor`, `normalizer`, `enricher`, `persistence`, and `api` each receive their own `.gitignore`. This prevents IDE files, build artifacts, local logs, or temporary files from being accidentally committed to the repository.
 
-Datei: `.gitignore`
+File: `.gitignore`
 
 ```gitignore
 # Maven build output
@@ -1732,7 +1728,7 @@ Thumbs.db
 *.swo
 ```
 
-Für `platform` kann dieselbe Datei verwendet werden. Zusätzlich sind lokale Compose-Daten, generierte Logs und temporäre Volumes auszuschliessen:
+The same file can be used for `platform`. In addition, local Compose data, generated logs, and temporary volumes should be excluded:
 
 ```gitignore
 # Local compose / Podman artefacts
@@ -1743,7 +1739,7 @@ volumes/
 .tmp/
 ```
 
-Für `web` werden zusätzlich Node-, Angular- und Library-Build-Artefakte ignoriert:
+For `web`, Node, Angular, and library build artifacts are additionally ignored:
 
 ```gitignore
 node_modules/
@@ -1757,24 +1753,24 @@ coverage/
 !.env.example
 ```
 
-### Code-Formatierung
+### Code Formatting
 
-Für die Java-Module empfiehlt sich `spotless-maven-plugin`. Spotless ist bewusst pragmatisch: Es läuft lokal über Maven, funktioniert in CI und kann IntelliJ-formatierte Dateien unabhängig von persönlichen IDE-Einstellungen erzwingen.
+For Java modules, `spotless-maven-plugin` is recommended. Spotless is deliberately pragmatic: it runs locally via Maven, works in CI, and can enforce IntelliJ-formatted files independently of personal IDE settings.
 
-Empfohlene Regel:
+Recommended commands:
 
 ```text
 mvn spotless:apply
 mvn spotless:check
 ```
 
-- `spotless:apply` formatiert den Code lokal.
-- `spotless:check` prüft im Build, ob alles korrekt formatiert ist.
-- In GitHub Actions sollte `spotless:check` vor `mvn verify` laufen.
+- `spotless:apply` formats the code locally.
+- `spotless:check` verifies during the build that everything is correctly formatted.
+- In GitHub Actions, `spotless:check` should run before `mvn verify`.
 
-#### Maven-Konfiguration für alle Java-Module
+#### Maven Configuration for All Java Modules
 
-In allen Java-`pom.xml`-Dateien wird folgender Plugin-Block ergänzt. Bei Spring-Boot-Services steht er innerhalb von `<build><plugins>...</plugins></build>`.
+The following plugin block is added to all Java `pom.xml` files. For Spring Boot services it is placed inside `<build><plugins>...</plugins></build>`.
 
 ```xml
 <plugin>
@@ -1810,13 +1806,13 @@ In allen Java-`pom.xml`-Dateien wird folgender Plugin-Block ergänzt. Bei Spring
 </plugin>
 ```
 
-Optional kann zusätzlich eine zentrale Datei `spotless.xml` pro Java-Modul abgelegt werden, falls später Import-Reihenfolge, Lizenzheader oder projektspezifische Formatregeln ergänzt werden sollen.
+Optionally, a central `spotless.xml` file can also be placed per Java module if import ordering, license headers, or project-specific formatting rules are to be added later.
 
-#### Frontend-Formatierung für `web`
+#### Frontend Formatting for `web`
 
-Für Angular empfiehlt sich `prettier`.
+For Angular, `prettier` is recommended.
 
-Datei: `.prettierrc`
+File: `.prettierrc`
 
 ```json
 {
@@ -1827,7 +1823,7 @@ Datei: `.prettierrc`
 }
 ```
 
-Zusätzliche npm Scripts:
+Additional npm scripts:
 
 ```json
 {
@@ -1841,11 +1837,11 @@ Zusätzliche npm Scripts:
 }
 ```
 
-### Gemeinsame JUnit-6-Konfiguration
+### Common JUnit 6 Configuration
 
-Alle Java-Module werden mit JUnit 6 getestet. JUnit 6 verwendet weiterhin das Jupiter-Programmiermodell mit `@Test`, `@ParameterizedTest`, `@MethodSource`, `@DisplayName`, `@Nested`, `Arguments.arguments(...)` und `Named.named(...)`.
+All Java modules are tested with JUnit 6. JUnit 6 continues to use the Jupiter programming model with `@Test`, `@ParameterizedTest`, `@MethodSource`, `@DisplayName`, `@Nested`, `Arguments.arguments(...)`, and `Named.named(...)`.
 
-In allen Java-Modulen wird folgende Testabhängigkeit ergänzt:
+The following test dependency is added to all Java modules:
 
 ```xml
 <dependency>
@@ -1856,7 +1852,7 @@ In allen Java-Modulen wird folgende Testabhängigkeit ergänzt:
 </dependency>
 ```
 
-Für Maven sollte der Surefire-Plugin-Stand bewusst gesetzt werden:
+The Surefire plugin version should be set explicitly for Maven:
 
 ```xml
 <plugin>
@@ -1866,7 +1862,7 @@ Für Maven sollte der Surefire-Plugin-Stand bewusst gesetzt werden:
 </plugin>
 ```
 
-Für Spring-Boot-Services bleibt zusätzlich `spring-boot-starter-test` sinnvoll. Wichtig ist, dass die JUnit-Versionen konsistent bleiben. Am saubersten ist Dependency Management über Spring Boot oder, falls nötig, über den JUnit BOM.
+For Spring Boot services, `spring-boot-starter-test` remains useful in addition. It is important that JUnit versions remain consistent. The cleanest approach is dependency management via Spring Boot or, if necessary, via the JUnit BOM.
 
 ```xml
 <dependency>
@@ -1876,22 +1872,22 @@ Für Spring-Boot-Services bleibt zusätzlich `spring-boot-starter-test` sinnvoll
 </dependency>
 ```
 
-Test-Konventionen:
+Test conventions:
 
-- Testklassen enden auf `Test`.
-- Fachliche Varianten werden bevorzugt als `@ParameterizedTest` geschrieben.
-- Datenquellen heissen sprechend, zum Beispiel `classifyBuildingPermitDescriptions()`.
-- Jeder Test erhält ein `@DisplayName`.
-- Wo mehrere fachliche Gruppen existieren, wird `@Nested` verwendet.
-- Testfälle verwenden nach Möglichkeit `arguments(named("Beschreibung", value), expected)`.
+- Test classes end with `Test`.
+- Business-case variants are preferably written as `@ParameterizedTest`.
+- Data sources have descriptive names, for example `classifyBuildingPermitDescriptions()`.
+- Every test has a `@DisplayName`.
+- Where multiple business groups exist, `@Nested` is used.
+- Test cases use `arguments(named("Description", value), expected)` wherever possible.
 
-## Teststrategie und Beispieltests pro Modul
+## Test Strategy and Example Tests per Module
 
-Die folgenden Tests sind bewusst einfach, aber sinnvoll. Sie testen zuerst reine Logik, Mapper, DTOs, Topic-Konstanten und SQL-/Query-Aufbau. Externe Infrastruktur wie Kafka, PostgreSQL oder HTTP wird im ersten Schritt gemockt oder in Integrationstests verschoben.
+The following tests are intentionally simple but meaningful. They first test pure logic, mappers, DTOs, topic constants, and SQL/query construction. External infrastructure such as Kafka, PostgreSQL, or HTTP is mocked in the first step or moved to integration tests.
 
-### `contracts`: Event- und Topic-Tests
+### `contracts`: Event and Topic Tests
 
-Datei:
+File:
 
 ```text
 KafkaTopicsTest.java
@@ -1939,7 +1935,7 @@ class KafkaTopicsTest {
 }
 ```
 
-Datei:
+File:
 
 ```text
 BuildingPermitEventTest.java
@@ -2020,11 +2016,11 @@ class BuildingPermitEventTest {
 }
 ```
 
-### `ingestor`: External-ID- und Payload-Tests
+### `ingestor`: External-ID and Payload Tests
 
-Damit der Ingestor gut testbar ist, sollte die ID-Ermittlung in eine kleine Klasse ausgelagert werden.
+To make the ingestor easily testable, ID resolution should be extracted into a small class.
 
-Datei:
+File:
 
 ```text
 ExternalIdResolver.java
@@ -2062,7 +2058,7 @@ public class ExternalIdResolver {
 }
 ```
 
-Datei:
+File:
 
 ```text
 ExternalIdResolverTest.java
@@ -2133,11 +2129,11 @@ class ExternalIdResolverTest {
 }
 ```
 
-### `normalizer`: Klassifikation und Mapping testen
+### `normalizer`: Testing Classification and Mapping
 
-Die Mapping-Logik wird in einen dedizierten Mapper verschoben. Der Normalizer bleibt dadurch klein und delegiert die fachliche Transformation an `BuildingPermitRawEventMapper`.
+The mapping logic is moved into a dedicated mapper. This keeps the normalizer small and delegates the business transformation to `BuildingPermitRawEventMapper`.
 
-Datei:
+File:
 
 ```text
 BuildingPermitRawEventMapper.java
@@ -2230,7 +2226,7 @@ public class BuildingPermitRawEventMapper {
 }
 ```
 
-Datei:
+File:
 
 ```text
 BuildingPermitMapperTest.java
@@ -2312,11 +2308,11 @@ class BuildingPermitMapperTest {
 }
 ```
 
-### `enricher`: Koordinaten-Fallback testen
+### `enricher`: Testing the Coordinate Fallback
 
-Für den Enricher wird die Koordinatenlogik ausgelagert.
+For the enricher, the coordinate logic is extracted into a separate class.
 
-Datei:
+File:
 
 ```text
 MunicipalityCoordinateResolver.java
@@ -2345,7 +2341,7 @@ public class MunicipalityCoordinateResolver {
 }
 ```
 
-Datei:
+File:
 
 ```text
 MunicipalityCoordinateResolverTest.java
@@ -2417,11 +2413,11 @@ class MunicipalityCoordinateResolverTest {
 }
 ```
 
-### `persistence`: UUID- und SQL-Parameter-Tests
+### `persistence`: UUID and SQL Parameter Tests
 
-Damit der Persistenz-Service ohne echte Datenbank testbar ist, sollte die UUID-Erzeugung ausgelagert werden.
+To make the persistence service testable without a real database, UUID generation should be extracted into a separate class.
 
-Datei:
+File:
 
 ```text
 PermitIdFactory.java
@@ -2441,7 +2437,7 @@ public class PermitIdFactory {
 }
 ```
 
-Datei:
+File:
 
 ```text
 PermitIdFactoryTest.java
@@ -2490,11 +2486,11 @@ class PermitIdFactoryTest {
 }
 ```
 
-### `api`: Query-Parameter und DTO-Mapping testen
+### `api`: Testing Query Parameters and DTO Mapping
 
-Der aktuelle Controller baut SQL direkt im Controller. Für saubere Tests sollte der Query-Aufbau in eine kleine Klasse verschoben werden. Noch besser wäre später `NamedParameterJdbcTemplate`; für den MVP bleibt diese Zwischenlösung verständlich.
+The current controller builds SQL directly in the controller. For clean tests, the query construction should be moved into a small class. Using `NamedParameterJdbcTemplate` later would be even better; for the MVP this intermediate solution remains comprehensible.
 
-Datei:
+File:
 
 ```text
 BuildingPermitQueryBuilder.java
@@ -2531,7 +2527,7 @@ public class BuildingPermitQueryBuilder {
 }
 ```
 
-Datei:
+File:
 
 ```text
 BuildingPermitQueryBuilderTest.java
@@ -2579,11 +2575,11 @@ class BuildingPermitQueryBuilderTest {
 }
 ```
 
-### Spring-Boot-Application-Smoke-Tests
+### Spring Boot Application Smoke Tests
 
-Für die Spring-Boot-Services kann zusätzlich ein sehr einfacher Context-Test ergänzt werden. Dieser Test muss nicht parameterisiert sein, weil er nur prüft, ob der Spring-Kontext startet. Die fachliche Logik bleibt trotzdem in parameterisierten Unit-Tests.
+For Spring Boot services, a very simple context test can additionally be included. This test does not need to be parameterized because it only verifies that the Spring context starts. The business logic nonetheless remains in parameterized unit tests.
 
-Beispiel für `api`:
+Example for `api`:
 
 ```java
 package ch.studior2.buildingpermitmonitor.api;
@@ -2603,13 +2599,12 @@ class BuildingPermitApiApplicationTest {
 }
 ```
 
-Für `ingestor`, `normalizer`, `enricher` und `persistence` wird derselbe Smoke-Test mit der jeweiligen Application-Klasse erstellt.
+For `ingestor`, `normalizer`, `enricher`, and `persistence`, the same smoke test is created with the respective application class.
+## Step-by-Step Guide: Platform Repository
 
-## Schritt-für-Schritt-Anleitung: Plattform-Repository
+The platform repository starts the local infrastructure. It contains no business Java logic.
 
-Das Plattform-Repository startet die lokale Infrastruktur. Es enthält keine fachliche Java-Logik.
-
-### Schritt 1: Repository erstellen
+### Step 1: Create the repository
 
 ```bash
 mkdir platform
@@ -2617,13 +2612,13 @@ cd platform
 git init
 ```
 
-### Schritt 2: Verzeichnisstruktur anlegen
+### Step 2: Create the directory structure
 
 ```bash
 mkdir -p compose conduktor scripts docs k8s
 ```
 
-Empfohlene Struktur:
+Recommended structure:
 
 ```text
 platform/
@@ -2639,27 +2634,27 @@ platform/
 `-- k8s/
 ```
 
-### Schritt 3: Compose-Datei hinzufügen
+### Step 3: Add the Compose file
 
-Die Datei `compose/docker-compose.yml` enthält Kafka, PostGIS, Conduktor Console und die Conduktor-Datenbank. Für lokale Entwicklung bleibt der Dateiname bewusst Docker-kompatibel, auch wenn die Umgebung mit Podman gestartet wird.
+The file `compose/docker-compose.yml` contains Kafka, PostGIS, Conduktor Console, and the Conduktor database. For local development the filename is deliberately kept Docker-compatible, even when the environment is started with Podman.
 
 ```bash
 podman compose -f compose/docker-compose.yml up -d
 ```
 
-### Schritt 4: Conduktor-Konfiguration hinzufügen
+### Step 4: Add the Conduktor configuration
 
-Die Datei `conduktor/platform-config.yaml` definiert den lokalen Conduktor-Login, die interne Conduktor-Datenbank und den Kafka-Cluster.
+The file `conduktor/platform-config.yaml` defines the local Conduktor login, the internal Conduktor database, and the Kafka cluster.
 
-Wichtig:
+Important:
 
 ```yaml
 bootstrapServers: kafka:29092
 ```
 
-Conduktor läuft im Compose-Netzwerk und darf deshalb nicht `localhost:9092` verwenden. `localhost:9092` ist nur für Zugriffe vom Host-System gedacht.
+Conduktor runs inside the Compose network and must therefore not use `localhost:9092`. `localhost:9092` is intended only for access from the host system.
 
-### Schritt 5: Kafka Topics erstellen
+### Step 5: Create the Kafka topics
 
 Script `scripts/create-topics.sh`:
 
@@ -2682,42 +2677,42 @@ do
  done
 ```
 
-Ausführbar machen:
+Make it executable:
 
 ```bash
 chmod +x scripts/create-topics.sh
 ./scripts/create-topics.sh
 ```
 
-### Schritt 6: Infrastruktur prüfen
+### Step 6: Verify the infrastructure
 
 ```bash
 podman compose -f compose/docker-compose.yml ps
 ```
 
-Kafka Topics prüfen:
+Check Kafka topics:
 
 ```bash
 podman exec -it bpm-kafka /opt/kafka/bin/kafka-topics.sh   --bootstrap-server localhost:9092   --list
 ```
 
-PostGIS prüfen:
+Check PostGIS:
 
 ```bash
 podman exec -it bpm-postgres psql -U app -d building_permits   -c 'SELECT PostGIS_Version();'
 ```
 
-Conduktor öffnen:
+Open Conduktor:
 
 ```text
 http://localhost:8085
 ```
 
-## Schritt-für-Schritt-Anleitung: contracts Library
+## Step-by-Step Guide: contracts Library
 
-`contracts` ist keine Spring-Boot-Anwendung. Es ist ein normales Maven-Java-Projekt, das von allen Microservices als Dependency verwendet wird.
+`contracts` is not a Spring Boot application. It is a plain Maven Java project used as a dependency by all microservices.
 
-### Schritt 1: Projekt erstellen
+### Step 1: Create the project
 
 ```bash
 mkdir contracts
@@ -2728,7 +2723,7 @@ mkdir -p src/main/resources/schemas
 mkdir -p examples
 ```
 
-### Schritt 2: `pom.xml` erstellen
+### Step 2: Create `pom.xml`
 
 ```xml
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -2756,7 +2751,7 @@ mkdir -p examples
 </project>
 ```
 
-### Schritt 3: Event-Klassen anlegen
+### Step 3: Create the event classes
 
 Raw Event:
 
@@ -2821,9 +2816,9 @@ public record BuildingPermitEnrichedEvent(
     String geocodingQuality) {}
 ```
 
-`latitude` und `longitude` werden im WGS84-Koordinatensystem (`EPSG:4326`) gespeichert. Das passt direkt für Leaflet und kann in PostGIS als `geometry(Point, 4326)` abgelegt werden. Wichtig ist dabei die Reihenfolge: Im Java-Event steht fachlich zuerst `latitude`, dann `longitude`; in PostGIS wird der Punkt aber mit `ST_MakePoint(longitude, latitude)` erzeugt.
+`latitude` and `longitude` are stored in the WGS84 coordinate system (`EPSG:4326`). This maps directly to Leaflet and can be stored in PostGIS as `geometry(Point, 4326)`. The order matters: in the Java event, `latitude` comes first semantically, followed by `longitude`; however, in PostGIS the point is created with `ST_MakePoint(longitude, latitude)`.
 
-### Schritt 4: Topic-Konstanten anlegen
+### Step 4: Create the topic constants
 
 ```java
 package ch.studior2.buildingpermitmonitor.contracts.topic;
@@ -2842,9 +2837,9 @@ public final class KafkaTopics {
 }
 ```
 
-### Schritt 5: Consumer-Group-Konstanten anlegen
+### Step 5: Create the consumer-group constants
 
-Die Kafka Consumer Group IDs werden ebenfalls zentral im `contracts`-Modul definiert. Dadurch stehen keine String-Literale in den `@KafkaListener`-Annotationen der Services.
+The Kafka consumer group IDs are also defined centrally in the `contracts` module. This eliminates string literals from the `@KafkaListener` annotations in the services.
 
 ```java
 package ch.studior2.buildingpermitmonitor.contracts.group;
@@ -2860,19 +2855,19 @@ public final class KafkaGroupIDs {
 }
 ```
 
-Beispiel:
+Example:
 
 ```java
 @KafkaListener(topics = KafkaTopics.RAW, groupId = KafkaGroupIDs.NORMALIZER)
 ```
 
-### Schritt 6: Library lokal installieren
+### Step 6: Install the library locally
 
 ```bash
 mvn clean install
 ```
 
-Danach können die Spring-Boot-Services diese Dependency verwenden:
+The Spring Boot services can then use this dependency:
 
 ```xml
 <dependency>
@@ -2882,13 +2877,13 @@ Danach können die Spring-Boot-Services diese Dependency verwenden:
 </dependency>
 ```
 
-## Schritt-für-Schritt-Anleitung: Ingestor Service
+## Step-by-Step Guide: Ingestor Service
 
-`ingestor` ist eine eigenständige Spring-Boot-Applikation. Sie lädt die externe CSV- oder GPKG-Datenquelle und publiziert Raw Events nach Kafka.
+`ingestor` is a standalone Spring Boot application. It loads the external CSV or GPKG data source and publishes raw events to Kafka.
 
-### Schritt 1: Spring-Boot-Projekt erzeugen
+### Step 1: Generate the Spring Boot project
 
-Mit Spring Initializr:
+Using Spring Initializr:
 
 ```text
 Project: Maven
@@ -2908,7 +2903,7 @@ Validation
 Actuator
 ```
 
-Zusätzlich im `pom.xml`:
+Additionally in `pom.xml`:
 
 ```xml
 <dependency>
@@ -2924,7 +2919,7 @@ Zusätzlich im `pom.xml`:
 </dependency>
 ```
 
-### Schritt 2: Package-Struktur anlegen
+### Step 2: Create the package structure
 
 ```text
 src/main/java/ch/studior2/buildingpermitmonitor/ingestor/
@@ -2935,7 +2930,7 @@ src/main/java/ch/studior2/buildingpermitmonitor/ingestor/
 `-- service/
 ```
 
-### Schritt 3: Anwendungsklasse erstellen
+### Step 3: Create the application class
 
 ```java
 package ch.studior2.buildingpermitmonitor.ingestor;
@@ -2954,9 +2949,9 @@ public class BuildingPermitIngestorApplication {
 }
 ```
 
-### Schritt 4: `application.yml` konfigurieren
+### Step 4: Configure `application.yml`
 
-Datei: `src/main/resources/application.yml`
+File: `src/main/resources/application.yml`
 
 ```yaml
 spring:
@@ -2981,7 +2976,7 @@ management:
         include: health,info,metrics
 ```
 
-### Schritt 5: Kafka Producer implementieren
+### Step 5: Implement the Kafka producer
 
 ```java
 package ch.studior2.buildingpermitmonitor.ingestor.kafka;
@@ -3006,9 +3001,9 @@ public class BuildingPermitRawProducer {
 }
 ```
 
-### Schritt 6: CSV Ingestor implementieren
+### Step 6: Implement the CSV ingestor
 
-Der Ingestor liest die CSV-Datei und publiziert pro Datensatz ein Raw Event. Die stabile External ID muss nach Analyse des echten CSV-Headers sauber ersetzt werden.
+The ingestor reads the CSV file and publishes one raw event per record. The stable external ID must be cleanly replaced after analysing the actual CSV header.
 
 ```java
 package ch.studior2.buildingpermitmonitor.ingestor.service;
@@ -3080,23 +3075,23 @@ public class BuildingPermitIngestor {
 }
 ```
 
-### Schritt 7: Lokal starten und testen
+### Step 7: Start and test locally
 
 ```bash
 mvn spring-boot:run
 ```
 
-Raw Events beobachten:
+Observe raw events:
 
 ```bash
 podman exec -it bpm-kafka /opt/kafka/bin/kafka-console-consumer.sh   --bootstrap-server localhost:9092   --topic building-permit.raw   --from-beginning
 ```
 
-## Schritt-für-Schritt-Anleitung: Normalizer Service
+## Step-by-Step Guide: Normalizer Service
 
-`normalizer` konsumiert Raw Events und erzeugt ein stabiles fachliches Schema.
+`normalizer` consumes raw events and produces a stable business schema.
 
-### Schritt 1: Spring-Boot-Projekt erzeugen
+### Step 1: Generate the Spring Boot project
 
 ```text
 Project: Maven
@@ -3116,7 +3111,7 @@ Validation
 Actuator
 ```
 
-Zusätzlich:
+Additionally:
 
 ```xml
 <dependency>
@@ -3126,7 +3121,7 @@ Zusätzlich:
 </dependency>
 ```
 
-### Schritt 2: `application.yml` konfigurieren
+### Step 2: Configure `application.yml`
 
 ```yaml
 spring:
@@ -3146,7 +3141,7 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 ```
 
-### Schritt 3: Consumer/Producer implementieren
+### Step 3: Implement the consumer/producer
 
 ```java
 package ch.studior2.buildingpermitmonitor.normalizer.service;
@@ -3181,34 +3176,34 @@ public class BuildingPermitNormalizer {
 }
 ```
 
-### Schritt 4: Testen
+### Step 4: Test
 
 ```bash
 mvn spring-boot:run
 ```
 
-Normalized Events beobachten:
+Observe normalized events:
 
 ```bash
 podman exec -it bpm-kafka /opt/kafka/bin/kafka-console-consumer.sh   --bootstrap-server localhost:9092   --topic building-permit.normalized   --from-beginning
 ```
 
-## Schritt-für-Schritt-Anleitung: Enricher Service
+## Step-by-Step Guide: Enricher Service
 
-`enricher` konsumiert normalisierte Events, geokodiert die vollständige Adresse und publiziert anschliessend Enriched Events. Die Koordinaten werden nicht mehr statisch pro Gemeinde hinterlegt. Stattdessen wird zuerst die im Normalizer aufgebaute Adresse verwendet, also Strasse, Hausnummer, PLZ und Ort. Die Gemeinde bleibt nur zusätzlicher Kontext.
+`enricher` consumes normalized events, geocodes the full address, and then publishes enriched events. Coordinates are no longer stored statically per municipality. Instead, the address assembled by the normalizer is used — that is, street, house number, postal code, and city. The municipality remains as additional context only.
 
-Für den MVP verwenden wir die GeoAdmin Search API von geo.admin.ch. Die API-Basis-URL und alle fachlich relevanten Parameter werden über `application.yml` konfiguriert. Dadurch bleibt der Client testbar und die konkrete Geocoding-Quelle kann später ausgetauscht werden.
+For the MVP we use the GeoAdmin Search API from geo.admin.ch. The API base URL and all business-relevant parameters are configured via `application.yml`. This keeps the client testable and allows the concrete geocoding source to be swapped out later.
 
-### Schritt 1: Spring-Boot-Projekt erzeugen
+### Step 1: Generate the Spring Boot project
 
 ```text
 Artifact: enricher
 Dependencies: Spring for Apache Kafka, WebFlux, Validation, Actuator
 ```
 
-Zusätzlich wieder `contracts` als Maven Dependency einbinden. `Spring WebFlux` wird hier nicht für einen reaktiven Service verwendet, sondern für den `WebClient`, mit dem der Enricher die GeoAdmin API aufruft.
+Also include `contracts` as a Maven dependency. `Spring WebFlux` is not used here for a reactive service, but for the `WebClient` with which the enricher calls the GeoAdmin API.
 
-### Schritt 2: `application.yml` konfigurieren
+### Step 2: Configure `application.yml`
 
 ```yaml
 spring:
@@ -3239,18 +3234,18 @@ building-permit:
     limit: 1
 ```
 
-Die wichtigsten Optionen:
+The most important options:
 
-- `provider`: fachlicher Name der Geocoding-Quelle. Dieser Wert wird im `BuildingPermitEnrichedEvent` mitgeführt.
-- `base-url`: Basis-URL der GeoAdmin API. Sie ist bewusst konfigurierbar und nicht im Code hart verdrahtet.
-- `search-path`: API-Pfad für die Location Search.
-- `timeout`: maximale Wartezeit pro Geocoding-Request.
-- `type`: GeoAdmin-Suchtyp. Für Adressen verwenden wir `locations`.
-- `origins`: verwendete GeoAdmin-Quellen. Für Baugesuche sind `address` und später `parcel` interessant.
-- `spatial-reference`: `4326` liefert WGS84-Koordinaten, passend für Leaflet und PostGIS `geometry(Point, 4326)`.
-- `limit`: Anzahl Treffer. Für den MVP verwenden wir den besten Treffer.
+- `provider`: business name of the geocoding source. This value is carried along in the `BuildingPermitEnrichedEvent`.
+- `base-url`: base URL of the GeoAdmin API. It is intentionally configurable and not hard-coded.
+- `search-path`: API path for the location search.
+- `timeout`: maximum wait time per geocoding request.
+- `type`: GeoAdmin search type. For addresses we use `locations`.
+- `origins`: GeoAdmin sources used. For building permits, `address` and later `parcel` are relevant.
+- `spatial-reference`: `4326` returns WGS84 coordinates, matching Leaflet and PostGIS `geometry(Point, 4326)`.
+- `limit`: number of results. For the MVP we use the best match.
 
-### Schritt 3: Konfigurationsklasse ergänzen
+### Step 3: Add the configuration class
 
 ```java
 package ch.studior2.buildingpermitmonitor.enricher.config;
@@ -3282,7 +3277,7 @@ import org.springframework.context.annotation.Configuration;
 public class GeocodingConfiguration {}
 ```
 
-### Schritt 4: Geocoding-Client definieren
+### Step 4: Define the geocoding client
 
 ```java
 package ch.studior2.buildingpermitmonitor.enricher.geocoding;
@@ -3294,7 +3289,7 @@ public interface GeocodingClient {
 }
 ```
 
-Die Query-Parameter-Namen der GeoAdmin API werden in eine kleine Konstantenklasse ausgelagert. Damit stehen keine HTTP-Parameternamen verstreut im Client-Code.
+The GeoAdmin API query parameter names are extracted into a small constants class. This prevents HTTP parameter names from being scattered throughout the client code.
 
 ```java
 package ch.studior2.buildingpermitmonitor.enricher.geocoding;
@@ -3311,7 +3306,7 @@ public final class GeoAdminQueryParameters {
 }
 ```
 
-### Schritt 5: GeoAdmin Client implementieren
+### Step 5: Implement the GeoAdmin client
 
 ```java
 package ch.studior2.buildingpermitmonitor.enricher.geocoding;
@@ -3386,9 +3381,9 @@ public class GeoAdminGeocodingClient implements GeocodingClient {
 }
 ```
 
-Wichtig: Der Client fordert mit `sr=4326` WGS84-Koordinaten an. Diese können direkt in Leaflet als `[latitude, longitude]` verwendet werden. Beim Speichern in PostGIS wird daraus `ST_MakePoint(longitude, latitude)`, weil PostGIS bei Punkten die Reihenfolge `x, y` erwartet.
+Important: The client requests WGS84 coordinates with `sr=4326`. These can be used directly in Leaflet as `[latitude, longitude]`. When saving to PostGIS this becomes `ST_MakePoint(longitude, latitude)`, because PostGIS expects points in `x, y` order.
 
-### Schritt 6: Enricher implementieren
+### Step 6: Implement the enricher
 
 ```java
 package ch.studior2.buildingpermitmonitor.enricher.service;
@@ -3452,9 +3447,9 @@ public class BuildingPermitEnricher {
 }
 ```
 
-### Schritt 7: Java-Modul öffnen
+### Step 7: Open the Java module
 
-Da der Enricher mit Java-Modulen, Spring Reflection, WebFlux und JSON-Deserialisierung arbeitet, braucht `module-info.java` gezielte `requires`- und `opens`-Direktiven.
+Because the enricher uses Java modules, Spring reflection, WebFlux, and JSON deserialization, `module-info.java` requires targeted `requires` and `opens` directives.
 
 ```java
 module ch.studior2.buildingpermitmonitor.enricher {
@@ -3489,7 +3484,7 @@ module ch.studior2.buildingpermitmonitor.enricher {
 }
 ```
 
-### Schritt 8: Enriched Topic beobachten
+### Step 8: Observe the enriched topic
 
 ```bash
 podman exec -it bpm-kafka /opt/kafka/bin/kafka-console-consumer.sh \
@@ -3498,18 +3493,18 @@ podman exec -it bpm-kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --from-beginning
 ```
 
-## Schritt-für-Schritt-Anleitung: Persistence Service
+## Step-by-Step Guide: Persistence Service
 
-`persistence` konsumiert Enriched Events und speichert sie idempotent in PostgreSQL/PostGIS. Die aktuelle Umsetzung verwendet **Spring Data JPA**, **Hibernate Spatial** und **JTS**. JDBC Template wird im Persistence-Modul nicht mehr verwendet.
+`persistence` consumes enriched events and stores them idempotently in PostgreSQL/PostGIS. The current implementation uses **Spring Data JPA**, **Hibernate Spatial**, and **JTS**. JDBC Template is no longer used in the persistence module.
 
-### Schritt 1: Spring-Boot-Projekt erzeugen
+### Step 1: Generate the Spring Boot project
 
 ```text
 Artifact: persistence
 Dependencies: Spring for Apache Kafka, Spring Data JPA, PostgreSQL Driver, Flyway Migration, Validation, Actuator
 ```
 
-Zusätzlich werden diese Dependencies benötigt:
+The following additional dependencies are required:
 
 ```xml
 <dependency>
@@ -3544,7 +3539,7 @@ Zusätzlich werden diese Dependencies benötigt:
 </dependency>
 ```
 
-Für Repository-Tests gegen echte PostGIS-Funktionen:
+For repository tests against real PostGIS functions:
 
 ```xml
 <dependency>
@@ -3578,7 +3573,7 @@ Für Repository-Tests gegen echte PostGIS-Funktionen:
 </dependency>
 ```
 
-### Schritt 2: `application.yml` konfigurieren
+### Step 2: Configure `application.yml`
 
 ```yaml
 spring:
@@ -3610,11 +3605,11 @@ spring:
         spring.json.trusted.packages: 'ch.studior2.buildingpermitmonitor.*'
 ```
 
-Wichtig: Flyway erstellt das Schema. Hibernate validiert es nur. Tabellen sollten nicht automatisch durch Hibernate erzeugt werden.
+Important: Flyway creates the schema. Hibernate only validates it. Tables should not be created automatically by Hibernate.
 
-### Schritt 3: Flyway Migration erstellen
+### Step 3: Create the Flyway migration
 
-Dateien:
+Files:
 
 ```text
 src/main/resources/db/migration/V1__create_building_permit_raw_event_registry.sql
@@ -3622,19 +3617,19 @@ src/main/resources/db/migration/V2__create_extension_postgis.sql
 src/main/resources/db/migration/V3__create_building_permits.sql
 ```
 
-Die Migrationen erledigen:
+The migrations handle:
 
-- Aktivierung von PostGIS
-- Erstellung der Tabelle `building_permit_raw_event_registry`
-- Erstellung der Tabelle `building_permits`
-- GIST-Index auf `geom`
-- Unique Constraint auf `(source, external_id)`
+- Activating PostGIS
+- Creating the `building_permit_raw_event_registry` table
+- Creating the `building_permits` table
+- GIST index on `geom`
+- Unique constraint on `(source, external_id)`
 
-Die vollständigen SQL-Scripts stehen im Abschnitt `Datenbankmodell`.
+The complete SQL scripts are in the `Database Model` section.
 
-### Schritt 4: Entity implementieren
+### Step 4: Implement the entity
 
-Die Entity mappt die fachlichen Spalten und die PostGIS-Geometrie. `geom` wird als JTS `Point` gespeichert. `raw_payload` ist `jsonb` und wird mit `@JdbcTypeCode(SqlTypes.JSON)` korrekt als JSON gebunden.
+The entity maps the business columns and the PostGIS geometry. `geom` is stored as a JTS `Point`. `raw_payload` is `jsonb` and is correctly bound as JSON with `@JdbcTypeCode(SqlTypes.JSON)`.
 
 ```java
 package ch.studior2.buildingpermitmonitor.persistence.entity;
@@ -3694,13 +3689,13 @@ public class BuildingPermitEntity {
   @Column(name = "raw_payload", columnDefinition = "jsonb")
   private String rawPayload;
 
-  // Getter, Setter, equals und hashCode
+  // Getters, setters, equals, and hashCode
 }
 ```
 
-### Schritt 5: PointFactory implementieren
+### Step 5: Implement the PointFactory
 
-PostGIS erwartet bei Punkten die Reihenfolge `x, y`, also `longitude, latitude`. Im Event und in der API bleiben die Werte fachlich lesbar als `latitude` und `longitude`.
+PostGIS expects points in `x, y` order, i.e., `longitude, latitude`. In the event and in the API, the values remain semantically readable as `latitude` and `longitude`.
 
 ```java
 package ch.studior2.buildingpermitmonitor.persistence.geometry;
@@ -3731,7 +3726,7 @@ public class PointFactory {
 }
 ```
 
-### Schritt 6: Spring Data Repository implementieren
+### Step 6: Implement the Spring Data repository
 
 ```java
 package ch.studior2.buildingpermitmonitor.persistence.repository;
@@ -3781,15 +3776,15 @@ public interface BuildingPermitRepository extends JpaRepository<BuildingPermitEn
 }
 ```
 
-Wichtig: In Spring Data Queries sollte nicht `:point::geography` verwendet werden. Spring Data kann das als Parameter `point::geography` interpretieren. Robuster ist:
+Important: In Spring Data queries, `:point::geography` should not be used. Spring Data may interpret this as the parameter `point::geography`. A more robust approach is:
 
 ```sql
 CAST(:point AS geography)
 ```
 
-### Schritt 7: Persistence Service implementieren
+### Step 7: Implement the persistence service
 
-Der Kafka-Consumer enthält bewusst keine Persistenzlogik. Er nimmt Enriched Events entgegen und delegiert an den Service.
+The Kafka consumer intentionally contains no persistence logic. It receives enriched events and delegates to the service.
 
 ```java
 package ch.studior2.buildingpermitmonitor.persistence.service;
@@ -3816,7 +3811,7 @@ public class BuildingPermitPersistenceConsumer {
 }
 ```
 
-Die eigentliche Persistenzlogik liegt im Service. Sie erzeugt eine stabile UUID, baut den JTS `Point`, speichert den vollständigen Event als JSON und führt ein idempotentes Insert/Update über den natürlichen Business Key `(source, external_id)` aus.
+The actual persistence logic resides in the service. It generates a stable UUID, builds the JTS `Point`, saves the complete event as JSON, and performs an idempotent insert/update using the natural business key `(source, external_id)`.
 
 ```java
 package ch.studior2.buildingpermitmonitor.persistence.service;
@@ -3874,13 +3869,13 @@ public class BuildingPermitPersistenceService {
 }
 ```
 
-### Schritt 8: Repository-Tests mit Testcontainers
+### Step 8: Repository tests with Testcontainers
 
-Repository-Tests laufen gegen einen echten PostGIS-Container. Dadurch werden nicht nur Mocks geprüft, sondern auch:
+Repository tests run against a real PostGIS container. This verifies not only mocks but also:
 
-- Flyway-Migrationen
-- Hibernate-Spatial-Mapping
-- `jsonb`-Mapping
+- Flyway migrations
+- Hibernate Spatial mapping
+- `jsonb` mapping
 - `ST_DWithin`
 - `ST_MakeEnvelope`
 - SRID `4326`
@@ -3918,7 +3913,7 @@ class BuildingPermitRepositoryTest {
 }
 ```
 
-Falls der Test durch die echte `BuildingPermitPersistenceApplication` zusätzlich Kafka-Konfiguration lädt, sollte für den Repository-Test eine minimale Test-Konfiguration verwendet werden:
+If the test loads additional Kafka configuration through the real `BuildingPermitPersistenceApplication`, a minimal test configuration should be used for the repository test:
 
 ```java
 @ContextConfiguration(classes = BuildingPermitRepositoryTest.TestApplication.class)
@@ -3932,7 +3927,7 @@ class BuildingPermitRepositoryTest {
 }
 ```
 
-Bei JPMS-Problemen mit Test-Jars, zum Beispiel mehrfachen Kafka-Modulen auf dem Modulpfad, kann für Surefire pragmatisch der Klassenpfad verwendet werden:
+For JPMS issues with test JARs — for example, multiple Kafka modules on the module path — the classpath can pragmatically be used for Surefire:
 
 ```xml
 <plugin>
@@ -3944,7 +3939,7 @@ Bei JPMS-Problemen mit Test-Jars, zum Beispiel mehrfachen Kafka-Modulen auf dem 
 </plugin>
 ```
 
-### Schritt 9: Datenbank prüfen
+### Step 9: Check the database
 
 ```bash
 podman exec -it bpm-postgres psql -U app -d building_permits
@@ -3957,7 +3952,7 @@ GROUP BY municipality, category
 ORDER BY count(*) DESC;
 ```
 
-Radius-Suche in SQL:
+Radius search in SQL:
 
 ```sql
 SELECT title, municipality
@@ -3968,21 +3963,20 @@ WHERE ST_DWithin(
     1000
 );
 ```
+## Step-by-Step Guide: API Service
 
-## Schritt-für-Schritt-Anleitung: API Service
+`api` is a standalone Spring Boot application. It does not consume Kafka events; instead it reads from PostgreSQL/PostGIS.
 
-`api` ist eine eigenständige Spring-Boot-Applikation. Sie konsumiert keine Kafka Events, sondern liest aus PostgreSQL/PostGIS.
-
-### Schritt 1: Spring-Boot-Projekt erzeugen
+### Step 1: Create the Spring Boot Project
 
 ```text
 Artifact: api
 Dependencies: Spring Web, Spring JDBC, PostgreSQL Driver, Validation, Actuator
 ```
 
-Optional kann WebFlux verwendet werden, wenn später Streaming-Endpunkte oder reaktive HTTP-Clients benötigt werden.
+WebFlux can optionally be used if streaming endpoints or reactive HTTP clients are needed later.
 
-### Schritt 2: `application.yml` konfigurieren
+### Step 2: Configure `application.yml`
 
 ```yaml
 spring:
@@ -4001,7 +3995,7 @@ management:
         include: health,info,metrics
 ```
 
-### Schritt 3: DTO erstellen
+### Step 3: Create the DTO
 
 ```java
 package ch.studior2.buildingpermitmonitor.api.dto;
@@ -4024,9 +4018,9 @@ public record BuildingPermitDto(
 }
 ```
 
-### Schritt 4: REST Controller erstellen
+### Step 4: Create the REST Controller
 
-Für den ersten MVP ist ein einfacher Endpoint ausreichend. In einer späteren Iteration sollte die Query mit `NamedParameterJdbcTemplate` parametrisiert werden.
+For the first MVP a simple endpoint is sufficient. In a later iteration the query should be parameterized using `NamedParameterJdbcTemplate`.
 
 ```java
 package ch.studior2.buildingpermitmonitor.api.controller;
@@ -4089,7 +4083,7 @@ public class BuildingPermitController {
 }
 ```
 
-### Schritt 5: API testen
+### Step 5: Testing the API
 
 ```bash
 mvn spring-boot:run
@@ -4103,26 +4097,26 @@ curl http://localhost:8080/api/building-permits
 curl "http://localhost:8080/api/building-permits?municipality=Thalwil"
 ```
 
-## Schritt-für-Schritt-Anleitung: Web Angular Library
+## Step-by-Step Guide: Web Angular Library
 
-`web` ist keine eigenständige Angular-Applikation. Das Modul wird als Angular Library gebaut und später als Dependency in die bestehende Studio-r2-Web-App integriert. Dadurch bleibt die Studio-r2-Web-App die eigentliche Host-Applikation, während `web` nur die fachlichen Baugesuch-Komponenten, Services und Modelle bereitstellt.
+`web` is not a standalone Angular application. The module is built as an Angular library and later integrated as a dependency into the existing Studio-r2 web app. This keeps the Studio-r2 web app as the actual host application, while `web` only provides the domain-specific building-permit components, services, and models.
 
-### Schritt 1: Angular Workspace ohne Applikation erstellen
+### Step 1: Create an Angular Workspace Without an Application
 
 ```bash
 npm create angular@latest web -- --create-application=false
 cd web
 ```
 
-Alternativ kann ein bestehender Angular Workspace verwendet werden. Wichtig ist, dass das Baugesuch-Frontend als Library erzeugt wird.
+Alternatively, an existing Angular workspace can be used. The important point is that the building-permit frontend is generated as a library.
 
-### Schritt 2: Library erzeugen
+### Step 2: Generate the Library
 
 ```bash
 npx ng generate library building-permit-map
 ```
 
-Empfohlene Struktur:
+Recommended structure:
 
 ```text
 web/
@@ -4142,18 +4136,18 @@ web/
 `-- dist/
 ```
 
-### Schritt 3: Leaflet installieren
+### Step 3: Install Leaflet
 
 ```bash
 npm install leaflet
 npm install --save-dev @types/leaflet
 ```
 
-Leaflet wird im Library-Modul verwendet. Die Host-Applikation muss die Leaflet-CSS-Datei ebenfalls einbinden, z. B. in `angular.json` oder globalen Styles.
+Leaflet is used in the library module. The host application must also include the Leaflet CSS file, for example in `angular.json` or in global styles.
 
-### Schritt 4: Konfiguration für die Host-Applikation vorbereiten
+### Step 4: Prepare the Configuration for the Host Application
 
-Die Library sollte keine fixe API-URL enthalten. Stattdessen stellt sie eine Konfiguration bereit, die von der Studio-r2-Web-App gesetzt wird.
+The library should not contain a hardcoded API URL. Instead it provides a configuration that is set by the Studio-r2 web app.
 
 ```typescript
 export interface BuildingPermitMapConfig {
@@ -4161,7 +4155,7 @@ export interface BuildingPermitMapConfig {
 }
 ```
 
-Die Host-Applikation kann später z. B. konfigurieren:
+The host application can later configure it as follows, for example:
 
 ```typescript
 provideBuildingPermitMap({
@@ -4169,9 +4163,9 @@ provideBuildingPermitMap({
 });
 ```
 
-### Schritt 5: Komponenten exportieren
+### Step 5: Export Components
 
-Die Library exportiert ihre öffentlichen Bausteine über `public-api.ts`:
+The library exports its public building blocks via `public-api.ts`:
 
 ```typescript
 export * from './lib/building-permit-map.component';
@@ -4180,32 +4174,32 @@ export * from './lib/building-permit-map.config';
 export * from './lib/model/building-permit';
 ```
 
-### Schritt 6: Library bauen
+### Step 6: Build the Library
 
 ```bash
 npm run build building-permit-map
 ```
 
-Das Ergebnis liegt unter:
+The output is located under:
 
 ```text
 dist/building-permit-map
 ```
 
-### Schritt 7: Integration in die Studio-r2-Web-App
+### Step 7: Integration into the Studio-r2 Web App
 
-Für lokale Entwicklung kann die Library direkt aus dem lokalen `dist`-Verzeichnis installiert werden:
+For local development the library can be installed directly from the local `dist` directory:
 
 ```bash
 cd ../studio-r2-web-app
 npm install ../building-permit-monitor/web/dist/building-permit-map
 ```
 
-Später kann die Library in eine private oder öffentliche npm Registry publiziert und versioniert werden.
+Later, the library can be published and versioned in a private or public npm registry.
 
-## Empfohlene Implementierungsreihenfolge
+## Recommended Implementation Order
 
-Für den MVP sollte nicht alles gleichzeitig gebaut werden. Sinnvoll ist diese Reihenfolge:
+For the MVP, not everything should be built at the same time. The following order makes sense:
 
 ```text
 1. platform
@@ -4218,7 +4212,7 @@ Für den MVP sollte nicht alles gleichzeitig gebaut werden. Sinnvoll ist diese R
 8. enricher
 ```
 
-Eine noch schlankere erste Version ist möglich:
+An even leaner initial version is possible:
 
 ```text
 1. platform
@@ -4228,13 +4222,13 @@ Eine noch schlankere erste Version ist möglich:
 5. api
 ```
 
-In dieser reduzierten Variante publiziert der Ingestor direkt ein normalisiertes Event oder die Persistence speichert vorübergehend Raw/Normalized Events. Der separate Normalizer und Enricher werden danach ergänzt.
+In this reduced variant the ingestor publishes a normalized event directly, or the persistence service temporarily stores raw/normalized events. The separate normalizer and enricher are added afterwards.
 
-## Datenbankmodell
+## Database Model
 
-Für den MVP reicht eine zentrale Tabelle.
+For the MVP a single central table is sufficient.
 
-Datei:
+File:
 
 ```text
 persistence/src/main/resources/db/migration/V1__create_building_permits.sql
@@ -4279,21 +4273,21 @@ CREATE INDEX idx_building_permits_geom
     USING GIST (geom);
 ```
 
-### Flyway im Spring Boot Start und als Maven Plugin
+### Flyway at Spring Boot Startup and as a Maven Plugin
 
-Das Projekt verwendet Flyway in zwei Rollen:
+The project uses Flyway in two roles:
 
 ```text
 spring-boot-starter-flyway
-    automatische Migration beim Start des Persistence-Moduls
+    automatic migration on startup of the Persistence module
 
 flyway-maven-plugin
-    manuelle Migrationen, Validierung und Statusabfragen
+    manual migrations, validation, and status queries
 ```
 
-Beide Varianten dürfen parallel existieren. Der Starter ist Teil der Anwendung. Das Maven Plugin wird nur ausgeführt, wenn es explizit aufgerufen wird.
+Both variants may coexist. The starter is part of the application. The Maven plugin is only executed when explicitly invoked.
 
-Beispiele:
+Examples:
 
 ```bash
 mvn -pl persistence flyway:info
@@ -4301,7 +4295,7 @@ mvn -pl persistence flyway:validate
 mvn -pl persistence flyway:migrate
 ```
 
-Damit das Maven Plugin eine Datenbankverbindung kennt, müssen `url`, `user` und `password` konfiguriert werden, entweder im Plugin, über Maven Properties oder über die Kommandozeile:
+For the Maven plugin to know the database connection, `url`, `user`, and `password` must be configured — either in the plugin, via Maven properties, or on the command line:
 
 ```bash
 mvn -pl persistence flyway:migrate \
@@ -4310,15 +4304,15 @@ mvn -pl persistence flyway:migrate \
   -Dflyway.password=app
 ```
 
-Das vereinfachte fachliche Datenmodell sieht so aus.
+The simplified domain data model looks like this.
 
 ![Simplified Data Model](docs/architecture/simplified-data-model.png)
 
-## Event-Modell
+## Event Model
 
 ### Raw Event
 
-Ein Raw Event enthält möglichst viel Originalinformation.
+A Raw Event contains as much of the original information as possible.
 
 ```java
 package ch.studior2.buildingpermitmonitor.contracts.event;
@@ -4335,7 +4329,7 @@ public record BuildingPermitRawEvent(
 }
 ```
 
-Beispiel:
+Example:
 
 ```json
 {
@@ -4353,7 +4347,7 @@ Beispiel:
 
 ### Normalized Event
 
-Ein normalisiertes Event enthält ein stabiles internes Schema.
+A normalized event contains a stable internal schema.
 
 ```java
 package ch.studior2.buildingpermitmonitor.contracts.event;
@@ -4375,7 +4369,7 @@ public record BuildingPermitNormalizedEvent(
 }
 ```
 
-Beispiel:
+Example:
 
 ```json
 {
@@ -4394,7 +4388,7 @@ Beispiel:
 
 ### Enriched Event
 
-Ein Enriched Event enthält zusätzlich Koordinaten und Metadaten zur Geokodierung. Die Koordinaten werden in WGS84 (`EPSG:4326`) geführt.
+An Enriched Event additionally contains coordinates and metadata about the geocoding. The coordinates are stored in WGS84 (`EPSG:4326`).
 
 ```java
 package ch.studior2.buildingpermitmonitor.contracts.event;
@@ -4418,7 +4412,7 @@ public record BuildingPermitEnrichedEvent(
     String geocodingQuality) {}
 ```
 
-Beispiel:
+Example:
 
 ```json
 {
@@ -4439,7 +4433,7 @@ Beispiel:
 }
 ```
 
-## Kafka Topic Konstanten
+## Kafka Topic Constants
 
 ```java
 package ch.studior2.buildingpermitmonitor.contracts.topic;
@@ -4458,7 +4452,7 @@ public final class KafkaTopics {
 }
 ```
 
-## Kafka Consumer Group Konstanten
+## Kafka Consumer Group Constants
 
 ```java
 package ch.studior2.buildingpermitmonitor.contracts.group;
@@ -4503,7 +4497,7 @@ public class BuildingPermitRawProducer {
 
 ## CSV Ingestor
 
-Der Ingestor lädt die CSV-Datei, liest jede Zeile und publiziert pro Zeile ein Raw Event.
+The ingestor loads the CSV file, reads each row, and publishes one Raw Event per row.
 
 ```java
 package ch.studior2.buildingpermitmonitor.ingestor.service;
@@ -4575,7 +4569,7 @@ public class BuildingPermitIngestor {
 }
 ```
 
-Scheduling aktivieren:
+Enable scheduling:
 
 ```java
 package ch.studior2.buildingpermitmonitor;
@@ -4594,25 +4588,25 @@ public class BuildingPermitApplication {
 }
 ```
 
-## Warum brauchen wir eine stabile External ID?
+## Why Do We Need a Stable External ID?
 
-Die Anwendung muss erkennen können, ob ein Baugesuch neu, bereits bekannt oder geändert ist.
+The application must be able to determine whether a building permit is new, already known, or has changed.
 
-Dafür brauchen wir:
+For this we need:
 
 ```text
 source + externalId
 ```
 
-Beispiel:
+Example:
 
 ```text
 kt-zh:123456
 ```
 
-Wenn der Datensatz keine eindeutige ID enthält, kann man vorläufig einen Hash bilden. Besser ist aber eine echte fachliche ID aus der Datenquelle.
+If the record does not contain a unique ID, a hash can be formed as a temporary measure. Better, however, is a real business ID from the data source.
 
-Beispiel für einen einfachen Hash:
+Example of a simple hash:
 
 ```java
 String fingerprint = DigestUtils.sha256Hex(
@@ -4620,7 +4614,7 @@ String fingerprint = DigestUtils.sha256Hex(
 );
 ```
 
-Dafür kann man Apache Commons Codec verwenden:
+Apache Commons Codec can be used for this:
 
 ```xml
 <dependency>
@@ -4632,7 +4626,7 @@ Dafür kann man Apache Commons Codec verwenden:
 
 ## Normalizer Consumer
 
-Der Normalizer konsumiert Raw Events und publiziert Normalized Events.
+The normalizer consumes Raw Events and publishes Normalized Events.
 
 ```java
 package ch.studior2.buildingpermitmonitor.normalizer.service;
@@ -4667,11 +4661,11 @@ public class BuildingPermitNormalizer {
 }
 ```
 
-## Persistenz-Service
+## Persistence Service
 
-Der Persistenz-Service konsumiert Enriched Events und speichert sie in PostgreSQL/PostGIS. Die aktuelle Implementierung basiert auf Spring Data JPA, Hibernate Spatial und JTS. JDBC Template wird im Persistence-Modul nicht mehr verwendet.
+The Persistence Service consumes Enriched Events and stores them in PostgreSQL/PostGIS. The current implementation is based on Spring Data JPA, Hibernate Spatial, and JTS. JdbcTemplate is no longer used in the Persistence module.
 
-Der Kafka-Consumer bleibt sehr klein:
+The Kafka consumer remains very small:
 
 ```java
 package ch.studior2.buildingpermitmonitor.persistence.service;
@@ -4698,7 +4692,7 @@ public class BuildingPermitPersistenceConsumer {
 }
 ```
 
-Die Persistenzlogik liegt im `BuildingPermitPersistenceService` und im Spring-Data-Repository:
+The persistence logic resides in `BuildingPermitPersistenceService` and the Spring Data repository:
 
 ```java
 public interface BuildingPermitRepository extends JpaRepository<BuildingPermitEntity, UUID> {
@@ -4737,36 +4731,36 @@ public interface BuildingPermitRepository extends JpaRepository<BuildingPermitEn
 }
 ```
 
-Wichtige Punkte:
+Key points:
 
-- `source + external_id` ist der natürliche Business Key.
-- `id` wird deterministisch aus `permitId` erzeugt.
-- `geom` wird als `geometry(Point, 4326)` gespeichert.
-- `raw_payload` wird als `jsonb` gespeichert und mit `@JdbcTypeCode(SqlTypes.JSON)` gemappt.
-- Räumliche Abfragen verwenden echte PostGIS-Funktionen.
-- Repository-Tests verwenden Testcontainers mit `postgis/postgis:17-3.5`.
+- `source + external_id` is the natural business key.
+- `id` is generated deterministically from `permitId`.
+- `geom` is stored as `geometry(Point, 4326)`.
+- `raw_payload` is stored as `jsonb` and mapped with `@JdbcTypeCode(SqlTypes.JSON)`.
+- Spatial queries use native PostGIS functions.
+- Repository tests use Testcontainers with `postgis/postgis:17-3.5`.
 
-## Geokodierung
+## Geocoding
 
-Die Geokodierung erfolgt nicht mehr über statisch hinterlegte Gemeindezentroide. Diese waren für eine erste Demo zwar einfach, sind für Baugesuche aber fachlich zu ungenau. Ein Baugesuch bezieht sich in der Regel auf ein Grundstück oder mindestens auf eine konkrete Adresse. Deshalb verwendet der Enricher die Adresse aus dem normalisierten Event.
+Geocoding is no longer performed via statically stored municipality centroids. While those were convenient for an initial demo, they are too imprecise for building permits from a domain perspective. A building permit typically refers to a specific plot or at least a concrete address. For this reason the enricher uses the address from the normalized event.
 
-Der Normalizer baut die Adresse aus den verfügbaren Rohdaten zusammen:
+The normalizer assembles the address from the available raw data:
 
 ```text
-Strasse + Hausnummer, PLZ + Ort
+street + house number, postcode + town
 ```
 
-Beispiel:
+Example:
 
 ```text
 Eisenbahnstrasse 27, 8800 Thalwil
 ```
 
-Diese Adresse wird vom Enricher an den `GeocodingClient` übergeben. Die Gemeinde wird zusätzlich als Kontext ergänzt, damit mehrdeutige Adressen besser aufgelöst werden können.
+This address is passed by the enricher to the `GeocodingClient`. The municipality is additionally supplied as context so that ambiguous addresses can be resolved more accurately.
 
-### GeoAdmin als MVP-Geocoder
+### GeoAdmin as the MVP Geocoder
 
-Für den MVP verwenden wir die GeoAdmin Search API von `geo.admin.ch`. Sie ist für Schweizer Geodaten fachlich passender als ein generischer internationaler Geocoder. Die Basis-URL und die Query-Optionen stehen in `application.yml` und sind dadurch austauschbar.
+For the MVP we use the GeoAdmin Search API from `geo.admin.ch`. It is more appropriate for Swiss geodata from a domain perspective than a generic international geocoder. The base URL and query options are defined in `application.yml` and are therefore swappable.
 
 ```yaml
 building-permit:
@@ -4781,25 +4775,25 @@ building-permit:
     limit: 1
 ```
 
-Wichtig ist `spatial-reference: 4326`. Dadurch liefert der Geocoder WGS84-Koordinaten. Das ist das Standardformat für Webkarten wie Leaflet.
+`spatial-reference: 4326` is important. It causes the geocoder to return WGS84 coordinates, which is the standard format for web maps such as Leaflet.
 
 ```text
 Leaflet Marker: [latitude, longitude]
 PostGIS Point:  ST_MakePoint(longitude, latitude)
 ```
 
-Diese unterschiedliche Reihenfolge ist wichtig. Im Java-Event bleiben die Werte lesbar als `latitude` und `longitude`. Beim Schreiben nach PostGIS wird aber aus technischen Gründen zuerst `longitude` und danach `latitude` übergeben.
+This difference in order is important. In the Java event the values remain readable as `latitude` and `longitude`. When writing to PostGIS, however, longitude is passed first and latitude second for technical reasons.
 
-### Geocoding Provider und Quality
+### Geocoding Provider and Quality
 
-Das Enriched Event enthält zusätzlich Metadaten zur Geokodierung:
+The Enriched Event additionally contains metadata about the geocoding:
 
 ```java
 String geocodingProvider,
 String geocodingQuality
 ```
 
-Für den MVP reichen diese Werte:
+For the MVP these values are sufficient:
 
 ```text
 GeocodingProvider.GEO_ADMIN
@@ -4807,22 +4801,22 @@ GeocodingQuality.ADDRESS
 GeocodingQuality.NOT_FOUND
 ```
 
-Später können weitere Qualitätsstufen ergänzt werden, zum Beispiel `PARCEL`, `STREET` oder `MUNICIPALITY`. Dadurch kann die API oder das Frontend später unterscheiden, ob ein Marker exakt adressbasiert ist oder nur ungefähr gesetzt wurde.
+Additional quality levels can be added later, for example `PARCEL`, `STREET`, or `MUNICIPALITY`. This allows the API or the frontend to later distinguish whether a marker is based on an exact address or was placed only approximately.
 
-### Fallback-Strategie
+### Fallback Strategy
 
-Die empfohlene Suchstrategie ist:
+The recommended search strategy is:
 
-1. vollständige Adresse: Strasse, Hausnummer, PLZ, Ort
-2. reduzierte Adresse: Strasse, PLZ, Ort
-3. Ort oder Gemeinde
-4. kein Marker, falls keine belastbaren Koordinaten gefunden werden
+1. full address: street, house number, postcode, town
+2. reduced address: street, postcode, town
+3. town or municipality
+4. no marker if no reliable coordinates are found
 
-Gemeindezentroide bleiben höchstens ein optionaler Fallback. Sie sollten im Frontend klar als ungenau markiert werden und nicht mit exakt geokodierten Adressen vermischt werden.
+Municipality centroids remain at most an optional fallback. They should be clearly marked as approximate in the frontend and should not be mixed with exactly geocoded addresses.
 
-### Speicherung in PostGIS
+### Storage in PostGIS
 
-Die Datenbank speichert sowohl die numerischen Koordinaten als auch eine PostGIS-Geometrie:
+The database stores both the numeric coordinates and a PostGIS geometry:
 
 ```sql
 latitude DOUBLE PRECISION,
@@ -4830,7 +4824,7 @@ longitude DOUBLE PRECISION,
 geom GEOMETRY(Point, 4326)
 ```
 
-Beim Upsert wird die Geometrie nur erzeugt, wenn beide Koordinaten vorhanden sind:
+On upsert the geometry is only created when both coordinates are present:
 
 ```sql
 CASE
@@ -4840,13 +4834,13 @@ CASE
 END
 ```
 
-Die Parameterreihenfolge ist dabei:
+The parameter order is:
 
 ```text
 longitude, latitude
 ```
 
-Damit funktionieren spätere räumliche Abfragen mit PostGIS und Marker-Anzeigen mit Leaflet ohne Koordinatentransformation.
+This ensures that later spatial queries with PostGIS and marker display with Leaflet work without any coordinate transformation.
 
 ## REST API
 
@@ -4936,48 +4930,48 @@ public class BuildingPermitController {
 }
 ```
 
-Hinweis: Für den ersten MVP ist das lesbar. In einer produktiveren Version sollte man parametrisierte Queries verwenden, z. B. mit `NamedParameterJdbcTemplate`, um SQL-Injection sauber zu vermeiden.
+Note: For the first MVP this is readable. In a more production-ready version, parameterized queries should be used, e.g. with `NamedParameterJdbcTemplate`, to cleanly avoid SQL injection.
 
-Besser:
+Better:
 
 ```java
-// Nächste Iteration:
+// Next iteration:
 // NamedParameterJdbcTemplate + MapSqlParameterSource
 ```
 
-## API testen
+## Testing the API
 
-API Service starten:
+Start the API service:
 
 ```bash
 cd api
 mvn spring-boot:run
 ```
 
-API testen:
+Test the API:
 
 ```bash
 curl http://localhost:8080/api/building-permits
 ```
 
-Mit Filter:
+With filter:
 
 ```bash
 curl "http://localhost:8080/api/building-permits?municipality=Thalwil"
 ```
 
-## Einfaches Angular-Library-Modul mit Leaflet
+## Simple Angular Library Module with Leaflet
 
-Für den MVP kann eine einfache, wiederverwendbare Angular-Komponente in der `web` Library reichen.
+For the MVP a simple, reusable Angular component in the `web` library is sufficient.
 
-Installieren:
+Install:
 
 ```bash
 npm install leaflet
 npm install --save-dev @types/leaflet
 ```
 
-Angular-Komponente, stark vereinfacht:
+Angular component, heavily simplified:
 
 ```typescript
 import { AfterViewInit, Component, Inject } from '@angular/core';
@@ -5035,32 +5029,31 @@ export class BuildingPermitMapComponent implements AfterViewInit {
   }
 }
 ```
+## Kubernetes and Google Cloud as a Later Target Platform
 
-## Kubernetes und Google Cloud als spätere Zielplattform
+For local development, Podman Compose is sufficient. For a later deployment, the application can be migrated to Kubernetes. The target platform can be Google Cloud, ideally with the `europe-west6` Zurich region.
 
-Für die lokale Entwicklung reicht Podman Compose. Für ein späteres Deployment kann die Anwendung in Kubernetes überführt werden. Die Zielplattform kann Google Cloud sein, idealerweise mit der Region `europe-west6` Zürich.
-
-Eine spätere Deployment-Struktur könnte so aussehen:
+A later deployment structure could look like this:
 
 ```text
 Google Cloud europe-west6
 |-- GKE Cluster
-|-- PostgreSQL/PostGIS, z. B. Cloud SQL mit PostGIS Extension, falls passend
-|-- Kafka, entweder selbst betrieben oder als separater Dienst
-|-- Spring Boot API Deployment
-|-- Studio-r2-Web-App als Host-Applikation
-`-- web Angular Library als integrierte Dependency
+|-- PostgreSQL/PostGIS, e.g. Cloud SQL with the PostGIS extension, if suitable
+|-- Kafka, either self-hosted or as a separate service
+|-- Spring Boot API deployment
+|-- Studio r2 web app as the host application
+`-- web Angular library as an integrated dependency
 ```
 
-Für den MVP sollte Kubernetes aber nicht der erste Schritt sein. Zuerst muss die lokale Pipeline stabil laufen. Danach kann man Kubernetes-Manifeste oder Helm Charts ergänzen.
+For the MVP, Kubernetes should not be the first step. The local pipeline must run stably first. After that, Kubernetes manifests or Helm Charts can be added.
 
-Das Zielbild für ein späteres Kubernetes-Deployment auf Google Cloud sieht wie folgt aus.
+The target vision for a later Kubernetes deployment on Google Cloud looks as follows.
 
 ![Kubernetes on Google Cloud](docs/architecture/kubernetes-google-cloud.png)
 
-## Event Flow testen
+## Testing the Event Flow
 
-### Raw Events beobachten
+### Observe Raw Events
 
 ```bash
 podman exec -it bpm-kafka /opt/kafka/bin/kafka-console-consumer.sh \
@@ -5069,7 +5062,7 @@ podman exec -it bpm-kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --from-beginning
 ```
 
-### Normalized Events beobachten
+### Observe Normalized Events
 
 ```bash
 podman exec -it bpm-kafka /opt/kafka/bin/kafka-console-consumer.sh \
@@ -5078,7 +5071,7 @@ podman exec -it bpm-kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --from-beginning
 ```
 
-### DLQ-Events beobachten
+### Observe DLQ Events
 
 ```bash
 podman exec -it bpm-kafka /opt/kafka/bin/kafka-console-consumer.sh \
@@ -5101,7 +5094,7 @@ podman exec -it bpm-kafka /opt/kafka/bin/kafka-console-consumer.sh \
   --from-beginning
 ```
 
-### Datenbank prüfen
+### Check the Database
 
 ```bash
 podman exec -it bpm-postgres psql -U app -d building_permits
@@ -5114,9 +5107,9 @@ GROUP BY municipality, category
 ORDER BY count(*) DESC;
 ```
 
-## Schritt-für-Schritt Implementierungsplan
+## Step-by-Step Implementation Plan
 
-### Schritt 1: Repository erstellen
+### Step 1: Create the Repository
 
 ```bash
 mkdir building-permit-monitor
@@ -5124,87 +5117,87 @@ cd building-permit-monitor
 git init
 ```
 
-### Schritt 2: Podman und Container Compose hinzufügen
+### Step 2: Add Podman and Container Compose
 
-Datei `docker-compose.yml` erstellen und Kafka, PostGIS sowie Conduktor Console definieren. Ausgeführt wird die Umgebung lokal mit Podman.
+Create the `docker-compose.yml` file and define Kafka, PostGIS, and Conduktor Console. The environment is run locally with Podman.
 
-Danach:
+Afterwards:
 
 ```bash
 podman compose up -d
 ```
 
-### Schritt 3: Erstes Spring-Boot-Modul erstellen
+### Step 3: Create the First Spring Boot Module
 
-Als erstes fachliches Modul empfiehlt sich `ingestor`. Dieses Modul lädt die öffentliche Datenquelle und schreibt Raw Events nach Kafka.
+The recommended first domain module is `ingestor`. This module loads the public data source and writes raw events to Kafka.
 
 ```bash
 mkdir ingestor
 ```
 
-Spring-Boot-Projekt für `ingestor` erzeugen.
+Generate the Spring Boot project for `ingestor`.
 
-### Schritt 4: Contracts Library erstellen
+### Step 4: Create the Contracts Library
 
-Das Modul `contracts` enthält die gemeinsamen Event-Klassen und Topic-Konstanten. Es wird lokal mit Maven gebaut und von den Spring-Boot-Services als Dependency verwendet.
+The `contracts` module contains the shared event classes and topic constants. It is built locally with Maven and used as a dependency by the Spring Boot services.
 
 ```bash
 cd contracts
 mvn clean install
 ```
 
-### Schritt 5: Kafka Topics erstellen
+### Step 5: Create Kafka Topics
 
-Topics manuell oder beim Start automatisch erstellen.
+Create topics manually or automatically on startup.
 
-Für den Anfang: manuell via Kafka CLI.
+For the beginning: manually via the Kafka CLI.
 
-### Schritt 6: Raw Event Modell erstellen
+### Step 6: Create the Raw Event Model
 
-Klasse:
+Class:
 
 ```text
 BuildingPermitRawEvent.java
 ```
 
-### Schritt 7: CSV Ingestor implementieren
+### Step 7: Implement the CSV Ingestor
 
-Klasse:
+Class:
 
 ```text
 BuildingPermitIngestor.java
 ```
 
-Zuerst lokal mit einer kleinen Test-CSV testen.
+First test locally with a small test CSV.
 
-### Schritt 8: Kanton-Zürich-CSV anbinden
+### Step 8: Connect the Canton of Zurich CSV
 
-Die reale CSV-URL aus dem Datenkatalog verwenden.
+Use the real CSV URL from the data catalog.
 
-Wichtig:
+Important:
 
-- Header der CSV anschauen
-- stabile ID-Spalte identifizieren
-- relevante Spalten dokumentieren
+- Inspect the CSV header
+- Identify a stable ID column
+- Document the relevant columns
 
-### Schritt 9: Normalizer implementieren
+### Step 9: Implement the Normalizer
 
-Klasse:
+Class:
 
 ```text
 BuildingPermitNormalizer.java
 ```
 
-Ziel:
+Goal:
 
-- Raw Event nach Normalized Event mappen
-- Kategorie ableiten
-- Status vereinheitlichen
-- Adresse und Gemeinde extrahieren
+- Map raw event to normalized event
+- Derive category
+- Standardize status
+- Extract address and municipality
 
-### Schritt 10: Persistenz implementieren
+### Step 10: Implement Persistence
 
-Klassen:
+Classes:
 
 ```text
 BuildingPermitPersistenceConsumer.java
@@ -5214,14 +5207,14 @@ BuildingPermitRepository.java
 PointFactory.java
 ```
 
-Ziel:
+Goal:
 
-- Enriched Event konsumieren
-- idempotent mit Spring Data JPA speichern
-- PostGIS-Geometrie mit Hibernate Spatial und JTS erzeugen
-- keine Duplikate erzeugen
+- Consume enriched event
+- Store idempotently with Spring Data JPA
+- Create PostGIS geometry with Hibernate Spatial and JTS
+- Produce no duplicates
 
-### Schritt 11: REST API implementieren
+### Step 11: Implement the REST API
 
 Endpoint:
 
@@ -5229,31 +5222,31 @@ Endpoint:
 GET /api/building-permits
 ```
 
-Filter:
+Filters:
 
 ```text
 municipality
 category
 ```
 
-### Schritt 12: Frontend ergänzen
+### Step 12: Add the Frontend
 
-Erste Version:
+First version:
 
-- Karte zentriert auf Kanton Zürich
-- Marker anzeigen
-- Popup mit Baugesuch-Details
+- Map centered on the Canton of Zurich
+- Display markers
+- Popup with building permit details
 
-### Schritt 13: README mit Screenshots ergänzen
+### Step 13: Add Screenshots to the README
 
 Screenshots:
 
-- Conduktor Console mit Topics
-- API Response
-- Kartenansicht
-- Datenbankabfrage
+- Conduktor Console with topics
+- API response
+- Map view
+- Database query
 
-### Schritt 14: GitHub Actions ergänzen
+### Step 14: Add GitHub Actions
 
 Minimal:
 
@@ -5313,38 +5306,38 @@ jobs:
         run: mvn -f api/pom.xml clean verify
 ```
 
-## Wichtige technische Entscheidungen
+## Key Technical Decisions
 
-### Warum Kafka?
+### Why Kafka?
 
-Kafka ist hier sinnvoll, weil Baugesuche als Events betrachtet werden können:
-
-```text
-Baugesuch wurde gefunden
-Baugesuch wurde geändert
-Baugesuch wurde normalisiert
-Baugesuch wurde gespeichert
-```
-
-Das erlaubt später:
-
-- mehrere Consumer
-- Analytics
-- Alerting
-- Reprocessing
-- Event History
-
-### Warum PostGIS?
-
-PostGIS erweitert PostgreSQL um räumliche Datentypen und Funktionen. Dadurch kann man später Fragen beantworten wie:
+Kafka makes sense here because building permits can be treated as events:
 
 ```text
-Welche Baugesuche liegen innerhalb von 500 m um einen Bahnhof?
-Welche Baugesuche liegen in einer bestimmten Gemeindegrenze?
-Welche Baugesuche liegen in einem Lärmgebiet?
+building permit was found
+building permit was changed
+building permit was normalized
+building permit was stored
 ```
 
-Beispiel:
+This allows later:
+
+- multiple consumers
+- analytics
+- alerting
+- reprocessing
+- event history
+
+### Why PostGIS?
+
+PostGIS extends PostgreSQL with spatial data types and functions. This makes it possible to answer questions later such as:
+
+```text
+Which building permits lie within 500 m of a train station?
+Which building permits lie within a specific municipal boundary?
+Which building permits lie within a noise zone?
+```
+
+Example:
 
 ```sql
 SELECT title, municipality
@@ -5356,49 +5349,49 @@ WHERE ST_DWithin(
 );
 ```
 
-Diese Query findet Baugesuche im Umkreis von 1000 Metern um einen Punkt.
+This query finds building permits within a radius of 1000 metres around a point.
 
-### Warum nicht zuerst ein Monolith?
+### Why Not a Monolith First?
 
-Ein modularer Monolith wäre für den Start einfacher. Für dieses Projekt ist eine Microservice-Architektur aber strategisch sinnvoller, weil einzelne Services separat als GitHub-Projekte veröffentlicht werden sollen.
+A modular monolith would be simpler to start with. For this project, however, a microservice architecture is strategically more sensible because individual services are intended to be published separately as GitHub projects.
 
-Vorteile der Microservice-first-Variante:
+Advantages of the microservice-first approach:
 
-- jeder Service zeigt eine klar abgegrenzte technische Kompetenz
-- Kafka wird nicht künstlich eingesetzt, sondern bildet die Integrationsschicht
-- Services können unabhängig getestet und gestartet werden
-- später ist ein Kubernetes Deployment natürlicher
-- einzelne Repositories eignen sich besser als Portfolio-Artefakte
-- der technische Schnitt entspricht einer echten Data-Streaming-Pipeline
+- each service demonstrates a clearly bounded technical competency
+- Kafka is not used artificially but forms the integration layer
+- services can be tested and started independently
+- a Kubernetes deployment is more natural later
+- individual repositories are better suited as portfolio artifacts
+- the technical cut matches a real data-streaming pipeline
 
-Der Nachteil ist höherer initialer Aufwand. Dieser Nachteil wird begrenzt, indem alle Services zuerst minimal gehalten werden und lokal gemeinsam über `platform` gestartet werden.
+The disadvantage is higher initial effort. This disadvantage is limited by keeping all services minimal at first and starting them together locally via `platform`.
 
-## Fehlerbehandlung
+## Error Handling
 
-### Parsing-Fehler
+### Parsing Errors
 
-Wenn eine CSV-Zeile nicht verarbeitet werden kann:
+When a CSV row cannot be processed:
 
-- Fehler loggen
-- Raw Payload über den zentralen `DefaultErrorHandler` nach `building-permit.raw.dlq` schreiben
-- Verarbeitung fortsetzen
+- log the error
+- write the raw payload via the central `DefaultErrorHandler` to `building-permit.raw.dlq`
+- continue processing
 
-### Kafka nicht erreichbar
+### Kafka Unreachable
 
-Für lokale Entwicklung reicht:
+For local development, the following is sufficient:
 
-- Fehler im Log
-- Anwendung neu starten
+- error in the log
+- restart the application
 
-Später:
+Later:
 
-- Retry
-- Health Checks
-- Backoff
+- retry
+- health checks
+- backoff
 
-### Datenbank nicht erreichbar
+### Database Unreachable
 
-Für lokale Entwicklung:
+For local development:
 
 ```bash
 podman compose restart postgres
@@ -5406,24 +5399,24 @@ podman compose restart postgres
 
 In Spring Boot:
 
-- Actuator Health Endpoint verwenden
-- DB-Verbindung über Connection Pool überwachen
+- use the Actuator Health Endpoint
+- monitor the database connection via the connection pool
 
-## Erweiterungen nach dem MVP
+## Post-MVP Extensions
 
-### Enrichment mit Geodaten
+### Enrichment with Geospatial Data
 
-Zusätzliche Datenquellen:
+Additional data sources:
 
-- Gemeindegrenzen
-- Bauzonen
-- ÖV-Haltestellen
-- Lärmzonen
-- Hochwasserzonen
+- municipal boundaries
+- building zones
+- public transport stops
+- noise zones
+- flood zones
 
 ### Risk Analyzer
 
-Für jedes Baugesuch könnte ein einfacher Score berechnet werden:
+A simple score could be calculated for each building permit:
 
 ```text
 risk_score = noise_score + flood_score + slope_score + traffic_score
@@ -5431,23 +5424,23 @@ risk_score = noise_score + flood_score + slope_score + traffic_score
 
 ### Housing Market Stream
 
-Später könnten Immobilien- oder Wohnungsmarktdaten ergänzt werden:
+Later, real estate or housing market data could be added:
 
-- Mietpreise
-- Leerwohnungsziffern
-- Bauaktivität
-- Wohnungsbestand
+- rental prices
+- vacancy rates
+- construction activity
+- housing stock
 
 ### Kafka Streams
 
-Für aggregierte Auswertungen:
+For aggregated analytics:
 
-- Baugesuche pro Gemeinde und Woche
-- Baugesuche pro Kategorie
-- gleitende Durchschnittswerte
-- Hotspots
+- building permits per municipality and week
+- building permits per category
+- rolling averages
+- hotspots
 
-Beispielhafte Topics:
+Example topics:
 
 ```text
 building-permit.statistics.daily
@@ -5455,62 +5448,62 @@ building-permit.statistics.weekly
 building-permit.statistics.by-municipality
 ```
 
-## Beispielhafte Roadmap
+## Example Roadmap
 
 ### Version 0.1
 
-- Podman und Container Compose
+- Podman and Container Compose
 - Kafka
 - PostGIS
-- manuelle Testevents
+- manual test events
 
 ### Version 0.2
 
-- CSV Ingestor
-- Raw Topic
+- CSV ingestor
+- raw topic
 - Conduktor Console
 
 ### Version 0.3
 
-- Normalizer
-- Normalized Topic
-- einfache Kategorie-Erkennung
+- normalizer
+- normalized topic
+- simple category detection
 
 ### Version 0.4
 
-- Persistenz nach PostGIS
+- persistence to PostGIS
 - REST API
 
 ### Version 0.5
 
 - Angular Library Package
-- integrierbare Karte mit Markern
+- embeddable map with markers
 
 ### Version 0.6
 
-- GeoAdmin-Geocoding für Adressen
-- WGS84-Koordinaten für Leaflet
-- PostGIS-Geometrien mit `geometry(Point, 4326)`
-- optionaler GPKG-Import für spätere GIS-Erweiterungen
+- GeoAdmin geocoding for addresses
+- WGS84 coordinates for Leaflet
+- PostGIS geometries with `geometry(Point, 4326)`
+- optional GPKG import for later GIS extensions
 
 ### Version 0.7
 
-- erste Statistiken
-- Baugesuche pro Gemeinde
-- Zeitfilter
+- first statistics
+- building permits per municipality
+- time filter
 
 ### Version 1.0
 
-- stabile Demo
-- README mit Screenshots
+- stable demo
+- README with screenshots
 - GitHub Actions
-- optional Deployment auf Schweizer VPS
+- optional deployment on a Swiss VPS
 
 ## Pandoc PDF Export
 
-Dieses README kann mit Pandoc in ein PDF umgewandelt werden.
+This README can be converted to a PDF with Pandoc.
 
-Beispiel:
+Example:
 
 ```bash
 pandoc README.md \
@@ -5520,17 +5513,17 @@ pandoc README.md \
   --number-sections
 ```
 
-Für dieses README wird eine kleine LaTeX-Präambel in `header.tex` empfohlen. Sie aktiviert Zeilenumbrüche in Code-Blöcken und reduziert Overfull-Box-Probleme bei langen Dateipfaden, Maven-Koordinaten, Java-Packages und URLs. Dadurch werden lange Beispiele im PDF nicht mehr rechts abgeschnitten.
+For this README, a small LaTeX preamble in `header.tex` is recommended. It enables line breaks in code blocks and reduces overfull-box problems with long file paths, Maven coordinates, Java packages, and URLs. This prevents long examples in the PDF from being cut off on the right.
 
-PlantUML-Diagramme werden bewusst nicht mehr während des Pandoc-Laufs über `pandoc-plantuml` gerendert. Stattdessen liegen alle Diagramme als separate `.puml`-Dateien im Verzeichnis `docs/architecture/`. Dadurch hängt die PDF-Generierung nicht an einem Java-/PlantUML-Subprozess innerhalb von Pandoc.
+PlantUML diagrams are deliberately no longer rendered during the Pandoc run via `pandoc-plantuml`. Instead, all diagrams are stored as separate `.puml` files in the `docs/architecture/` directory. This means PDF generation no longer depends on a Java/PlantUML subprocess inside Pandoc.
 
-Diagramme zuerst rendern:
+Render diagrams first:
 
 ```bash
 find architecture -name "*.puml" -exec plantuml -tpng {} \\;
 ```
 
-Danach das PDF erzeugen:
+Then generate the PDF:
 
 ```bash
 pandoc README_live_building_permit_monitor_zh_integrated.md \
@@ -5553,16 +5546,16 @@ pandoc README_live_building_permit_monitor_zh_integrated.md \
   --include-in-header=header.tex
 ```
 
-Wichtig: `--filter pandoc-plantuml` entfällt bewusst. Die Kapitelnummerierung wird nicht manuell im Markdown gepflegt. Sie entsteht beim Rendern automatisch über `--number-sections`.
+Important: `--filter pandoc-plantuml` is deliberately omitted. Chapter numbering is not maintained manually in the Markdown. It is generated automatically during rendering via `--number-sections`.
 
-Die Datei `header.tex` sollte im gleichen Verzeichnis wie das README liegen. Sie enthält insbesondere `breaklines`, `breakanywhere`, `xurl`, `hyphenat`, `\sloppy` und `\emergencystretch`, damit lange Code-Zeilen, URLs, Package-Namen und Dateipfade im PDF umgebrochen werden können.
+The `header.tex` file should be in the same directory as the README. It contains in particular `breaklines`, `breakanywhere`, `xurl`, `hyphenat`, `\sloppy`, and `\emergencystretch`, so that long code lines, URLs, package names, and file paths can be wrapped in the PDF.
 
-## Weiterführende Links
+## Further Links
 
-### Öffentliche Daten
+### Public Data
 
-- Kanton Zürich Datenkatalog: https://datenkatalog.statistik.zh.ch/
-- Baugesuche im Kanton Zürich: https://datenkatalog.statistik.zh.ch/datasets/2982%40statistisches-amt-kanton-zürich
+- Canton of Zurich Data Catalog: https://datenkatalog.statistik.zh.ch/
+- Building permits in the Canton of Zurich: https://datenkatalog.statistik.zh.ch/datasets/2982%40statistisches-amt-kanton-zürich
 - opendata.swiss: https://opendata.swiss/
 - geo.admin.ch API: https://api3.geo.admin.ch/
 
@@ -5590,62 +5583,62 @@ Die Datei `header.tex` sollte im gleichen Verzeichnis wie das README liegen. Sie
 - Spring Boot Documentation: https://docs.spring.io/spring-boot/
 - Spring Initializr: https://start.spring.io/
 
-## GitHub README Checkliste
+## GitHub README Checklist
 
-Vor Veröffentlichung sollte das Repository enthalten:
+Before publication, the repository should contain:
 
-- Projektbeschreibung
-- Architekturdiagramm
-- verwendete Datenquelle
-- lokales Setup
-- Podman und Container Compose Anleitung
-- Screenshots
-- API Beispiele
-- bekannte Einschränkungen
-- Roadmap
-- Lizenz
+- project description
+- architecture diagram
+- data source used
+- local setup
+- Podman and Container Compose guide
+- screenshots
+- API examples
+- known limitations
+- roadmap
+- license
 
-Empfohlene Lizenz:
+Recommended license:
 
 ```text
 MIT License
 ```
 
-Für Datenquellen sollte zusätzlich klar auf die jeweiligen Nutzungsbedingungen der Originaldaten verwiesen werden.
+For data sources, the respective terms of use of the original data should additionally be clearly referenced.
 
-## Kurzbeschreibung für GitHub
+## Short Description for GitHub
 
 ```text
 Kafka-based live monitor for public building permit data in the Canton of Zurich. The system ingests open government data, publishes raw and normalized events to Kafka, stores results in PostGIS and visualizes building permit activity on an interactive map.
 ```
 
-## Fachliche Einschränkungen
+## Domain Limitations
 
-Dieses Projekt ist ein technischer Prototyp. Es ersetzt keine amtliche Prüfung von Baugesuchen und sollte nicht als rechtlich verbindliche Quelle verwendet werden.
+This project is a technical prototype. It does not replace an official review of building permits and should not be used as a legally binding source.
 
-Mögliche Einschränkungen:
+Possible limitations:
 
-- Aktualisierung hängt vom Originaldatensatz ab
-- einzelne Felder können fehlen oder anders benannt sein
-- Adressen können unvollständig sein
-- Geokodierung kann fehlschlagen oder ungenaue Treffer liefern
-- Gemeindezentroide sind höchstens ein optionaler Fallback und nur ungefähre Positionen
-- Geokodierung muss sorgfältig validiert werden
+- updates depend on the original dataset
+- individual fields may be missing or named differently
+- addresses may be incomplete
+- geocoding may fail or return imprecise results
+- municipal centroids are at most an optional fallback and only approximate positions
+- geocoding must be carefully validated
 
-## Nächster sinnvoller Entwicklungsschritt
+## Next Sensible Development Step
 
-Der nächste konkrete Schritt ist:
+The next concrete step is:
 
-1. CSV-Datei aus dem Kanton-Zürich-Datenkatalog herunterladen.
-2. Header analysieren.
-3. stabile ID-Spalte bestimmen.
-4. Mapping-Tabelle erstellen:
+1. Download the CSV file from the Canton of Zurich data catalog.
+2. Analyze the header.
+3. Determine a stable ID column.
+4. Create a mapping table:
 
 ```text
 CSV column -> internal field
 ```
 
-Beispiel:
+Example:
 
 ```text
 Gemeinde      -> municipality
@@ -5654,23 +5647,23 @@ Adresse       -> address
 Publikation   -> publishedDate
 ```
 
-Danach kann der Ingestor sauber gegen die reale Datenstruktur implementiert werden.
+After that, the ingestor can be cleanly implemented against the real data structure.
 
 
-## Ergänzungen vom 04.06.2026
+## Additions from 2026-06-04
 
 ### Spring Boot 4 + Java Module System
 
-Bei Verwendung von `module-info.java` mit Spring Boot 4 müssen alle Pakete, auf die Spring per Reflection zugreift, explizit geöffnet werden.
+When using `module-info.java` with Spring Boot 4, all packages that Spring accesses via reflection must be explicitly opened.
 
-Typische Fehlermeldung:
+Typical error message:
 
 ```text
 IllegalAccessException:
 module ... does not open ...config to module spring.core
 ```
 
-Beispiel:
+Example:
 
 ```java
 module ch.studior2.buildingpermitmonitor.persistence {
@@ -5689,20 +5682,20 @@ module ch.studior2.buildingpermitmonitor.persistence {
 }
 ```
 
-Empfehlung:
+Recommendation:
 
-- Hauptpackage öffnen
-- `config`-Packages öffnen
-- `entity`-Packages öffnen
-- `repository`- und `service`-Packages öffnen, falls Spring oder Hibernate per Reflection darauf zugreift
-- DTO- und Event-Packages nur exportieren, nicht unnötig öffnen
-- für Repository-Tests bei JPMS-Problemen notfalls Surefire mit `<useModulePath>false</useModulePath>` konfigurieren
+- open the main package
+- open `config` packages
+- open `entity` packages
+- open `repository` and `service` packages if Spring or Hibernate accesses them via reflection
+- only export DTO and event packages, do not open them unnecessarily
+- for repository tests with JPMS issues, configure Surefire with `<useModulePath>false</useModulePath>` as a last resort
 
-### WebClient im Enricher
+### WebClient in the Enricher
 
-Der Geocoding-Client verwendet `WebClient.Builder`.
+The geocoding client uses `WebClient.Builder`.
 
-Dafür muss das Modul `spring-boot-starter-webflux` eingebunden sein:
+For this, the `spring-boot-starter-webflux` module must be included:
 
 ```xml
 <dependency>
@@ -5711,7 +5704,7 @@ Dafür muss das Modul `spring-boot-starter-webflux` eingebunden sein:
 </dependency>
 ```
 
-Zusätzlich sollte der Builder explizit als Bean verfügbar sein:
+Additionally, the builder should be explicitly available as a bean:
 
 ```java
 @Configuration
@@ -5724,13 +5717,13 @@ public class WebClientConfiguration {
 }
 ```
 
-Dadurch bleibt der Enricher unabhängig von einer späteren API-Anwendung und kann eigenständig gestartet werden.
+This keeps the enricher independent of a later API application and allows it to be started standalone.
 
-### Smoke Tests für alle Spring-Boot-Services
+### Smoke Tests for All Spring Boot Services
 
-Jeder Microservice sollte mindestens einen Start-Up-Test besitzen.
+Every microservice should have at least one startup test.
 
-Beispiel:
+Example:
 
 ```java
 @SpringBootTest
@@ -5742,7 +5735,7 @@ class ApplicationStartupTest {
 }
 ```
 
-Empfohlene Testklassen:
+Recommended test classes:
 
 ```text
 BuildingPermitIngestorApplicationTest
@@ -5752,55 +5745,55 @@ BuildingPermitPersistenceApplicationTest
 BuildingPermitApiApplicationTest
 ```
 
-Ziel:
+Goal:
 
-- Spring Context startet erfolgreich
-- Bean-Wiring funktioniert
-- Modul- und Reflection-Konfiguration wird früh erkannt
-- fehlende Dependencies werden bereits im CI-Build sichtbar
+- Spring context starts successfully
+- bean wiring works
+- module and reflection configuration is detected early
+- missing dependencies become visible already in the CI build
 
-### Teststrategie
+### Test Strategy
 
-Reihenfolge der Tests:
+Order of tests:
 
-1. Context-Load-Test pro Service
-2. Unit-Tests für Mapper und Services
-3. Kafka-Integrationstests
-4. PostgreSQL/PostGIS-Integrationstests
-5. End-to-End-Tests über die komplette Event-Pipeline
+1. Context load test per service
+2. Unit tests for mappers and services
+3. Kafka integration tests
+4. PostgreSQL/PostGIS integration tests
+5. End-to-end tests across the complete event pipeline
 
-Der Context-Load-Test ist die günstigste Möglichkeit, Konfigurationsfehler früh zu erkennen.
+The context load test is the cheapest way to detect configuration errors early.
 
-## Dokumentation im Maven Site Lifecycle generieren
+## Generating Documentation in the Maven Site Lifecycle
 
-Die technische Projektdokumentation soll nicht im normalen Maven Default Lifecycle erzeugt werden. Ein normaler Build mit:
+The technical project documentation should not be generated in the normal Maven default lifecycle. A normal build with:
 
 ```bash
 mvn clean verify
 ```
 
-kompiliert, testet und prüft weiterhin nur die Anwendung.
+continues to only compile, test, and verify the application.
 
-Die Dokumentation wird bewusst im Maven Site Lifecycle erzeugt:
+The documentation is deliberately generated in the Maven site lifecycle:
 
 ```bash
 mvn -N site
 ```
 
-oder, falls der gesamte Reactor verwendet werden soll:
+or, if the entire reactor should be used:
 
 ```bash
 mvn site
 ```
 
-Dabei gilt folgende Reihenfolge:
+The following order applies:
 
-1. Alle PlantUML-Diagramme aus `docs/architecture/*.puml` werden als PNG gerendert.
-2. Danach wird aus `docs/README.md` mit Pandoc das PDF `docs/README.pdf` erstellt.
+1. All PlantUML diagrams from `docs/architecture/*.puml` are rendered as PNG.
+2. Afterwards, the PDF `docs/README.pdf` is created from `docs/README.md` using Pandoc.
 
-### Voraussetzungen
+### Prerequisites
 
-Lokal müssen folgende Tools installiert sein:
+The following tools must be installed locally:
 
 ```bash
 pandoc --version
@@ -5808,24 +5801,24 @@ pdflatex --version
 plantuml -version
 ```
 
-Für `minted=true` wird ausserdem eine LaTeX-Installation mit `minted` und `pygmentize` benötigt:
+For `minted=true`, a LaTeX installation with `minted` and `pygmentize` is also required:
 
 ```bash
 pygmentize -V
 ```
 
-Da Pandoc mit `--pdf-engine-opt=-shell-escape` ausgeführt wird, sollte dieser Schritt nur für vertrauenswürdige Markdown-Dateien und lokale Dokumentation verwendet werden.
+Since Pandoc is run with `--pdf-engine-opt=-shell-escape`, this step should only be used for trusted Markdown files and local documentation.
 
 ### Root `pom.xml`
 
-Die Dokumentation wird im Root-`pom.xml` über das `exec-maven-plugin` in den Maven Site Lifecycle eingebunden.
+The documentation is integrated into the Maven site lifecycle in the root `pom.xml` via the `exec-maven-plugin`.
 
-Wichtig:
+Important:
 
-- Die Konfiguration gehört nur ins Root-Modul.
-- `<inherited>false</inherited>` verhindert, dass Submodule dieselben Befehle erneut ausführen.
-- PlantUML läuft in `pre-site`.
-- Pandoc läuft in `post-site`, damit die Diagramme sicher bereits gerendert sind.
+- The configuration belongs only in the root module.
+- `<inherited>false</inherited>` prevents submodules from executing the same commands again.
+- PlantUML runs in `pre-site`.
+- Pandoc runs in `post-site`, so that the diagrams are guaranteed to be rendered already.
 
 ```xml
 <build>
@@ -5918,7 +5911,7 @@ Wichtig:
 </build>
 ```
 
-Die Plugin-Version wird zentral in den Properties verwaltet:
+The plugin version is managed centrally in the properties:
 
 ```xml
 <properties>
@@ -5926,7 +5919,7 @@ Die Plugin-Version wird zentral in den Properties verwaltet:
 </properties>
 ```
 
-### Empfohlene Verzeichnisstruktur
+### Recommended Directory Structure
 
 ```text
 building-permit-monitor/
@@ -5950,29 +5943,29 @@ building-permit-monitor/
 `-- api/
 ```
 
-### Aufruf
+### Invocation
 
-Nur die Dokumentation im Root-Modul erzeugen:
+Generate only the documentation in the root module:
 
 ```bash
 mvn -N site
 ```
 
-Kompletter Site-Lifecycle für den ganzen Maven-Reactor:
+Complete site lifecycle for the entire Maven reactor:
 
 ```bash
 mvn site
 ```
 
-Falls nur geprüft werden soll, ob der normale Build weiterhin unabhängig funktioniert:
+If you only want to check that the normal build continues to work independently:
 
 ```bash
 mvn clean verify
 ```
 
-### Hinweise zu Pfaden in Markdown
+### Notes on Paths in Markdown
 
-Die Bilder sollten in `docs/README.md` relativ zum Markdown-Dokument referenziert werden:
+Images should be referenced in `docs/README.md` relative to the Markdown document:
 
 ```markdown
 ![Kafka Event Flow](docs/architecture/kafka-event-flow.png)
@@ -5982,4 +5975,4 @@ Die Bilder sollten in `docs/README.md` relativ zum Markdown-Dokument referenzier
 ![Target Architecture](docs/architecture/target-architecture.png)
 ```
 
-Da Pandoc aus dem Projekt-Root mit `docs/README.md` aufgerufen wird, funktionieren diese relativen Pfade innerhalb des Dokuments korrekt.
+Since Pandoc is invoked from the project root with `docs/README.md`, these relative paths work correctly within the document.
