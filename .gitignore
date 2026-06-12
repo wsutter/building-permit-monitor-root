@@ -47,3 +47,14 @@ Thumbs.db
 *.tmp
 *.swp
 *.swo
+
+# Agentic AI
+.agent/
+.agents/
+.claude/
+.github/
+
+# BMad method
+_bmad/
+_bmad-output/
+design-artifacts/
