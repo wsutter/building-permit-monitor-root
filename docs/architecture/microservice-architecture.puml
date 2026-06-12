@@ -31,13 +31,14 @@ kafka --> normalizer : consumes raw
 normalizer --> kafka : building-permit.normalized
 normalizer --> dlq : building-permit.raw.dlq
 kafka --> enricher : consumes normalized
-geo --> enricher : optional GIS lookup
+geo --> enricher : address geocoding (GeoAdmin)
 enricher --> kafka : building-permit.enriched
 enricher --> dlq : building-permit.normalized.dlq
 kafka --> persistence : consumes enriched
 persistence --> postgres : upsert permits
 persistence --> dlq : building-permit.enriched.dlq
 api --> postgres : spatial queries
+ingestor ..> persistence : raw-event registry (dedup)
 host --> web : library dependency
 web --> api : REST
 

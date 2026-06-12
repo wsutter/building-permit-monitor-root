@@ -18,21 +18,21 @@ database "PostGIS" as postgis
 
 scheduler -> ingestor : trigger polling job
 ingestor -> ingestor : download CSV
-ingestor -> ingestor : detect new / changed records
-ingestor -> raw : publish RawBuildingPermitEvent
+ingestor -> ingestor : detect new records (raw-event registry)
+ingestor -> raw : publish BuildingPermitRawEvent
 
 raw -> normalizer : consume
-normalizer -> normalizer : validate and map fields
-normalizer -> normalized : publish NormalizedBuildingPermitEvent
+normalizer -> normalizer : map fields, classify category / status
+normalizer -> normalized : publish BuildingPermitNormalizedEvent
 normalizer -> rawDlq : processing failed after retries
 
 normalized -> enricher : consume
-enricher -> enricher : geocode / enrich GIS data
-enricher -> enriched : publish EnrichedBuildingPermitEvent
+enricher -> enricher : geocode address (GeoAdmin)
+enricher -> enriched : publish BuildingPermitEnrichedEvent
 enricher -> normalizedDlq : processing failed after retries
 
 enriched -> persistence : consume
-persistence -> persistence : idempotency check
+persistence -> persistence : idempotent upsert by (source, external_id)
 persistence -> postgis : upsert permit
 persistence -> enrichedDlq : processing failed after retries
 

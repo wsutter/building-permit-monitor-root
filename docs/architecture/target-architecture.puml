@@ -1,5 +1,5 @@
 @startuml
-title building-permit-monitor - Zielarchitektur
+title building-permit-monitor - Target Architecture
 
 skinparam componentStyle rectangle
 skinparam shadowing false
@@ -9,8 +9,8 @@ skinparam linetype ortho
 actor "Public User" as user
 
 cloud "Open Data" {
-  component "Kanton Zürich\nBaugesuche CSV / GPKG" as ktzh
-  component "geo.admin.ch\noptionale GIS APIs" as geoadmin
+  component "Canton of Zurich\nBuilding Permits CSV / GPKG" as ktzh
+  component "geo.admin.ch\noptional GIS APIs" as geoadmin
 }
 
 package "building-permit-monitor" {
@@ -45,32 +45,32 @@ package "Studio r2 Web Platform" {
   component "Studio r2 Web-App\nAngular Host Application" as host
 }
 
-user --> host : nutzt Kartenansicht
-host --> web : integriert als Dependency
+user --> host : uses map view
+host --> web : integrates as dependency
 web --> api : REST / JSON
-api --> postgis : liest Baugesuche
+api --> postgis : reads building permits
 
-ktzh --> ingestor : CSV / GPKG Download
+ktzh --> ingestor : CSV / GPKG download
 ingestor --> kafka : building-permit.raw
-kafka --> normalizer : Raw Events
+kafka --> normalizer : raw events
 normalizer --> kafka : building-permit.normalized
 normalizer --> dlq : building-permit.raw.dlq
-kafka --> enricher : Normalized Events
-geoadmin --> enricher : optionale GIS-Anreicherung
+kafka --> enricher : normalized events
+geoadmin --> enricher : address geocoding (GeoAdmin)
 enricher --> kafka : building-permit.enriched
 enricher --> dlq : building-permit.normalized.dlq
-kafka --> persistence : Enriched Events
-persistence --> postgis : idempotenter Upsert
+kafka --> persistence : enriched events
+persistence --> postgis : idempotent upsert
 persistence --> dlq : building-permit.enriched.dlq
 
-ingestor ..> contracts : nutzt Events
-normalizer ..> contracts : nutzt Events
-enricher ..> contracts : nutzt Events
-persistence ..> contracts : nutzt Events
-api ..> contracts : nutzt DTOs optional
-normalizer ..> dlqConfig : importiert
-enricher ..> dlqConfig : importiert
-persistence ..> dlqConfig : importiert
-dlqConfig ..> contracts : nutzt Topic-Konstanten
+ingestor ..> contracts : uses events
+normalizer ..> contracts : uses events
+enricher ..> contracts : uses events
+persistence ..> contracts : uses events
+api ..> contracts : uses DTOs (optional)
+normalizer ..> dlqConfig : imports
+enricher ..> dlqConfig : imports
+persistence ..> dlqConfig : imports
+dlqConfig ..> contracts : uses topic constants
 
 @enduml

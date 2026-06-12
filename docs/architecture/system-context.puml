@@ -21,6 +21,6 @@ web --> api : REST / JSON
 api --> db : reads permits
 pipeline --> db : writes enriched permits
 pipeline --> ktzh : downloads public building permits
-pipeline --> geoadmin : optional geocoding / GIS enrichment
+pipeline --> geoadmin : address geocoding (GeoAdmin)
 
 @enduml

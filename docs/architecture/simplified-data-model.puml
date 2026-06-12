@@ -5,8 +5,10 @@ hide circle
 skinparam linetype ortho
 skinparam shadowing false
 
+' --- Implemented (Flyway V1 / V2) ---
+
 entity "building_permits" as permits {
-  * id : uuid
+  * id : uuid <<PK>>
   --
   source : text
   external_id : text
@@ -17,14 +19,34 @@ entity "building_permits" as permits {
   municipality : text
   published_date : date
   address : text
+  latitude : double precision
+  longitude : double precision
+  geocoding_provider : text
+  geocoding_quality : text
   geom : geometry(Point, 4326)
   raw_payload : jsonb
   created_at : timestamp
   updated_at : timestamp
+  --
+  unique (source, external_id)
 }
 
-entity "permit_events" as events {
-  * id : uuid
+entity "building_permit_raw_event_registry" as registry {
+  * external_id : varchar(255) <<PK>>
+  --
+  first_seen_at : timestamptz
+}
+
+note bottom of registry
+  Deduplication registry.
+  Ingestor records each external_id
+  and only publishes new permits.
+end note
+
+' --- Planned / not yet implemented ---
+
+entity "permit_events <<planned>>" as events {
+  * id : uuid <<PK>>
   --
   permit_id : uuid
   event_type : text
@@ -32,15 +54,16 @@ entity "permit_events" as events {
   payload : jsonb
 }
 
-entity "municipalities" as municipalities {
-  * bfs_number : integer
+entity "municipalities <<planned>>" as municipalities {
+  * bfs_number : integer <<PK>>
   --
   name : text
   canton : text
   geom : geometry(MultiPolygon, 4326)
 }
 
-municipalities ||--o{ permits : contains
-permits ||--o{ events : has
+registry ..> permits : tracks (by external_id)
+municipalities ||..o{ permits : contains (planned)
+permits ||..o{ events : has (planned)
 
 @enduml

@@ -6,7 +6,7 @@ The system continuously imports building permit data, transforms it into a stand
 
 ## Documentation
 
-Detailed documentation is available in the [`docs`](docs/) directory in German.
+Detailed documentation is available in the [`docs`](docs/) directory.
 
 Available resources include:
 
@@ -18,6 +18,28 @@ Available resources include:
 - Development notes
 
 📚 See: [Project Documentation](docs/README.md)
+
+## BMad Method
+
+This project's planning and specification artifacts are produced and maintained with the [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD) — a structured, agent-assisted workflow for going from product intent to implementable specs. The BMad artifacts live under [`docs/bmad/`](docs/bmad/) and complement (rather than replace) the detailed engineering docs in [`docs/README.md`](docs/README.md).
+
+### Where to find which artifact
+
+| Artifact | Location | What it is |
+| -------- | -------- | ---------- |
+| Project Brief | [`docs/bmad/project-brief.md`](docs/bmad/project-brief.md) | Vision, goals, MVP scope, users, constraints |
+| PRD | [`docs/bmad/prd.md`](docs/bmad/prd.md) | Functional & non-functional requirements, acceptance criteria |
+| Architecture | [`docs/bmad/architecture.md`](docs/bmad/architecture.md) | System design, messaging/persistence design, key decisions |
+| Coding Standards | [`docs/bmad/coding-standards.md`](docs/bmad/coding-standards.md) | Conventions every module follows |
+| Module Specs | [`docs/bmad/specs/`](docs/bmad/specs/) | Per-module specs: `contracts`, `ingestor`, `normalizer`, `enricher`, `persistence`, `api`, `platform` |
+| Backlog & Roadmap | [`docs/bmad/backlog.md`](docs/bmad/backlog.md) | Current-state snapshot, near-term work, tech debt, post-MVP roadmap |
+
+### How to use them
+
+- **Read in this order:** Project Brief → PRD → Architecture → the relevant Module Spec → Backlog. Each links to the others.
+- **Source of truth for current state:** the `docs/bmad/` artifacts describe what is actually implemented; where they differ from the older design narrative in `docs/README.md`, the BMad artifacts take precedence (see Backlog item *T-02*).
+- **Working a change?** Pick the matching Module Spec for context and acceptance criteria, then check the Backlog for related items.
+- **BMad tooling** is installed locally under [`_bmad/`](_bmad/). The method's skills drive the workflow — for example, `bmad-help` (orientation and next step), `bmad-quick-dev` (intent → reviewable spec → code), and `bmad-prd` / `bmad-create-architecture` (create or update planning docs). Run each skill in a fresh context for best results.
 
 ## Architecture Overview
 
@@ -66,6 +88,8 @@ building-permit.enriched
 | `normalizer`  | Cleans and standardizes permit data                                         |
 | `enricher`    | Adds geographic coordinates using Swiss GeoAdmin                            |
 | `persistence` | Stores enriched permits in PostgreSQL/PostGIS                               |
+| `api`         | Exposes stored permits through a REST query API                             |
+| `platform`    | Local development infrastructure (Kafka, PostGIS, Conduktor) and scripts    |
 
 ## Event Flow
 
@@ -111,6 +135,33 @@ building-permit.enriched
 The Persistence service stores enriched permits in PostgreSQL.
 
 Spatial queries are supported through PostGIS.
+
+## Query API
+
+Once permits are stored, the `api` service exposes them over REST. It is a read-only query layer over PostgreSQL/PostGIS and does not participate in the Kafka pipeline.
+
+Endpoint:
+
+```text
+GET /api/building-permits
+```
+
+Optional query parameters (applied with parameterized SQL):
+
+| Parameter      | Description                          |
+| -------------- | ------------------------------------ |
+| `municipality` | Filter by municipality name          |
+| `category`     | Filter by permit category            |
+
+Results are ordered by publication date (newest first) and capped at 500 records.
+
+Examples:
+
+```bash
+curl http://localhost:8080/api/building-permits
+curl "http://localhost:8080/api/building-permits?municipality=Thalwil"
+curl "http://localhost:8080/api/building-permits?category=RENOVATION"
+```
 
 ## Kafka Topics
 
@@ -184,6 +235,8 @@ building-permit-monitor
 ├── normalizer
 ├── enricher
 ├── persistence
+├── api
+├── platform
 └── docs
 ```
 
@@ -211,6 +264,10 @@ mvn spring-boot:run -pl enricher
 
 ```bash
 mvn spring-boot:run -pl persistence
+```
+
+```bash
+mvn spring-boot:run -pl api
 ```
 
 ### Import Data
