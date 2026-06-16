@@ -62,13 +62,15 @@ Building Permit Monitor turns periodic open building-permit data for the Canton 
 - **FR-D6** Maintain the raw-event registry table used for duplicate detection (FR-A4).
 - **FR-D7** Support spatial queries: within-radius (`ST_DWithin`) and bounding-box (`ST_MakeEnvelope && geom`).
 - **FR-D8** Route failures to `building-permit.enriched.dlq`.
+- **FR-D9** Maintain `updated_at` on upsert (set to now() on modification; `created_at` unchanged). *(backlog B-07)*
 
 ### Epic E — Query API (`api`)
 - **FR-E1** Expose `GET /api/building-permits` returning `BuildingPermitDto` records.
 - **FR-E2** Optional filters `municipality` and `category`, applied via parameterized SQL (`NamedParameterJdbcTemplate`).
 - **FR-E3** Order by `published_date DESC NULLS LAST`, cap result set at 500.
-- **FR-E4 (planned)** Bounding-box filter for map viewports.
-- **FR-E5 (planned)** Date-range and free-text filters; streaming endpoints (SSE/WebFlux).
+- **FR-E4 (planned)** Bounding-box filter for map viewports (expose persistence `findVisiblePermits`). *(backlog B-03)*
+- **FR-E5 (planned)** Radius filter around a point (expose persistence `findWithinRadius`). *(backlog B-04)*
+- **FR-E6 (planned)** Date-range and free-text filters; streaming endpoints (SSE/WebFlux).
 
 ### Epic F — Platform & Contracts (`platform`, `contracts`)
 - **FR-F1** Provide local infrastructure (Kafka KRaft, PostGIS, Conduktor Console) via Podman Compose.
