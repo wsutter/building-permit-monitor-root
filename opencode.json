@@ -1,0 +1,61 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "publicai": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "PublicAI",
+      "options": {
+        "baseURL": "https://api.publicai.co/v1",
+        "headers": {
+          "User-Agent": "OpenCode/1.0"
+        }
+      },
+      "models": {
+        "swiss-ai/apertus-8b-instruct": {
+          "name": "Apertus 8B Instruct"
+        },
+        "swiss-ai/apertus-70b-instruct": {
+          "name": "Apertus 70B Instruct"
+        }
+      }
+    },
+    "hf_featherless": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Hugging Face Featherless",
+      "options": {
+        "baseURL": "https://router.huggingface.co/v1",
+        "apiKey": "{env:HF_TOKEN}"
+      },
+      "models": {
+        "swiss-ai/Apertus-70B-Instruct-2509": {
+          "name": "Apertus 70B Instruct 2509 via Featherless"
+        }
+      }
+    },
+    "mistral": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Mistral AI",
+      "options": {
+        "baseURL": "https://api.mistral.ai/v1",
+        "apiKey": "{env:MISTRAL_API_KEY}"
+      },
+      "models": {
+        "devstral-latest": {
+          "name": "Devstral Latest"
+        }
+      }
+    }
+  },
+  "model": "mistral/devstral-latest",
+  "small_model": "hf_featherless/swiss-ai/Apertus-70B-Instruct-2509",
+  "permission": {
+    "read": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "bash": "allow",
+    "edit": "ask",
+    "webfetch": "ask"
+  },
+  "instructions": [
+  ]
+}

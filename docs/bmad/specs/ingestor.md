@@ -21,6 +21,24 @@ Read raw building-permit data from the external Canton ZH open-data source and p
 - For each record, calls `rawEventRegistry.registerIfNew(event.id(), event.publicationNumber())`; publishes via `BuildingPermitRawProducer` only when new, otherwise logs a skip at `INFO`.
 - `BuildingPermitRawProducer.send` → `kafkaTemplate.send(KafkaTopics.RAW, externalId, event)`.
 
+## CSV → Raw Event field mapping (validated 2026-06-16, Story 1.1 / B-01)
+
+The live OGD CSV (dataset `KTZH_00002982`, 41 columns) is bound to `BuildingPermitRawEvent` by `JsonMapper.convertValue`. The CSV uses **underscore-separated path segments with intra-segment camelCase** (e.g. `buildingContractor_company_address_swissZipCode`) plus the `noUID` casing; the record components are camelCase (`...NoUid`). Because the contracts `JsonMapper` sets **no `PropertyNamingStrategy`**, each component carries an explicit **`@JsonProperty("<exact CSV header>")`** in `contracts/.../event/BuildingPermitRawEvent.java`. (A standard naming strategy cannot reproduce this irregular convention.)
+
+Stable business key: `externalId = id + ":" + publicationNumber` (both columns present and populated). Blank/null CSV cells are pruned before binding.
+
+Representative consumed fields (full table of all 41 columns is in the story `docs/bmad/1-1-…md`):
+
+| CSV header | Record component | Consumed by |
+|---|---|---|
+| `id`, `publicationNumber` | `id`, `publicationNumber` | `externalId` (dedup, key) |
+| `publicationDate` | `publicationDate` | normalizer → `publishedDate` |
+| `municipality_name` | `municipalityName` | normalizer → `municipality` |
+| `projectDescription` | `projectDescription` | normalizer → description/title + category |
+| `projectLocation_address_street` / `_houseNumber` / `_swissZipCode` / `_town` | `projectLocationAddress*` | normalizer → `address` (geocoding input) |
+
+**Residual notes:** only `id`, `publicationNumber`, `publicationDate`, `entryDeadline`, `expirationDate`, `projectDescription` match the component name verbatim; all other 35 columns require the `@JsonProperty` binding. No CSV column is dropped — all 41 are mapped. **Watch:** the upstream schema can drift — re-fetch the header and diff against the annotations when ingestion misbehaves.
+
 ## Configuration (`application.yml`)
 
 - `app.building-permits.source-url`: `https://daten.statistik.zh.ch/ogd/daten/ressourcen/KTZH_00002982_00006183.csv`

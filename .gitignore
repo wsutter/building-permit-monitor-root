@@ -7,6 +7,7 @@ target/
 *.iws
 *.ipr
 out/
+.run/
 
 # Eclipse / Spring Tools
 .classpath
@@ -53,6 +54,7 @@ Thumbs.db
 .agents/
 .claude/
 .github/
+.opencode/
 
 # BMad method
 _bmad/
