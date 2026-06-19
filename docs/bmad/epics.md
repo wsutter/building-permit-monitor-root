@@ -33,7 +33,7 @@ This document provides the epic and story breakdown for building-permit-monitor,
 **Epic A — Ingestion (`ingestor`)**
 
 - FR-A1 ✅ Periodically (cron) download the Canton ZH building-permit CSV from the configured `source-url`.
-- FR-A2 🟡 Parse each CSV record into a `BuildingPermitRawEvent` (flat Canton-ZH schema). *Mapping must be validated against the real OGD file — B-01.*
+- FR-A2 ✅ Parse each CSV record into a `BuildingPermitRawEvent` (flat Canton-ZH schema). *Mapping validated and documented — B-01.*
 - FR-A3 ✅ Compute a stable business key `externalId = id + ":" + publicationNumber`.
 - FR-A4 ✅ Skip permits already seen via the raw-event registry; only publish new permits.
 - FR-A5 ✅ Publish new raw events to `building-permit.raw`, keyed by external id.
@@ -43,7 +43,7 @@ This document provides the epic and story breakdown for building-permit-monitor,
 
 - FR-B1 ✅ Consume `building-permit.raw` under consumer group `normalizer`.
 - FR-B2 ✅ Map the raw Canton-ZH record into `BuildingPermitNormalizedEvent`.
-- FR-B3 🟡 Classify into canonical `BuildingPermitCategory`. *Classifier present; rules to broaden — B-02.*
+- FR-B3 ⬜ Classify into canonical `BuildingPermitCategory`. *Rules to broaden — B-02.*
 - FR-B4 🟡 Normalize status into `BuildingPermitStatus`. *Mapping to expand — B-02.*
 - FR-B5 🟡 Compose a human-usable `address` (street + number, ZIP + town) and carry `municipality`. *Edge cases — B-02.*
 - FR-B6 ✅ Publish to `building-permit.normalized`, keyed by `permitId`.
