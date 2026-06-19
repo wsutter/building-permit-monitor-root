@@ -43,7 +43,7 @@ This document provides the epic and story breakdown for building-permit-monitor,
 
 - FR-B1 ✅ Consume `building-permit.raw` under consumer group `normalizer`.
 - FR-B2 ✅ Map the raw Canton-ZH record into `BuildingPermitNormalizedEvent`.
-- FR-B3 ⬜ Classify into canonical `BuildingPermitCategory`. *Rules to broaden — B-02.*
+- FR-B3 ✅ Classify into canonical `BuildingPermitCategory`. *Rules broadened — B-02.*
 - FR-B4 🟡 Normalize status into `BuildingPermitStatus`. *Mapping to expand — B-02.*
 - FR-B5 🟡 Compose a human-usable `address` (street + number, ZIP + town) and carry `municipality`. *Edge cases — B-02.*
 - FR-B6 ✅ Publish to `building-permit.normalized`, keyed by `permitId`.
