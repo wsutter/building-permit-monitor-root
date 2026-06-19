@@ -50,8 +50,6 @@ Thumbs.db
 *.swo
 
 # Agentic AI
-.agent/
-.agents/
 .claude/
 .github/
 .opencode/
