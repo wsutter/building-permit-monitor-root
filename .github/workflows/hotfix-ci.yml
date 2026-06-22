@@ -2,33 +2,66 @@ name: Hotfix Branch CI/CD
 
 on:
   push:
-    branches: [ "hotfix/**" ]
+    branches:
+      - 'hotfix/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-test-lint:
+    name: Build, test and lint
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          java-version: '25'
-          distribution: 'temurin'
-      - run: mvn -pl contracts install
-      - run: mvn clean verify
-      - run: mvn spotless:check
 
-  deploy-production:
+    steps:
+      - name: Checkout repository including submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Build, test and run Spotless
+        run: mvn -B -ntp clean verify spotless:check
+
+  deploy-production-candidate:
+    name: Deploy hotfix package
     needs: build-test-lint
     runs-on: ubuntu-latest
     environment: production
+    if: github.event_name == 'push'
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout repository including submodules
+        uses: actions/checkout@v4
         with:
+          submodules: recursive
+
+      - name: Set up Java 25 and GitHub Packages
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
           java-version: '25'
-          distribution: 'temurin'
-      - run: mvn -pl platform deploy -DskipTests
+          cache: maven
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+
+      - name: Deploy to GitHub Packages
+        run: mvn -B -ntp deploy -DskipTests -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/${{ github.repository }}
         env:
-          DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
