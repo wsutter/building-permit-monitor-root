@@ -240,6 +240,57 @@ building-permit-monitor
 └── docs
 ```
 
+## Git Flow & CI/CD
+
+This project uses **Git Flow** for branch management and **GitHub Actions** for CI/CD automation.
+
+### Branch Strategy
+
+| Branch Type      | Purpose                                                                                     |
+|------------------|---------------------------------------------------------------------------------------------|
+| `main`           | Production-ready code. Always reflects the latest stable release.                          |
+| `develop`        | Integration branch for features, releases, and hotfixes. Always deployable to staging.     |
+| `feature/*`      | New functionality or improvements. Branched from `develop`, merged back via PR.            |
+| `release/*`      | Preparation for a new production release. Branched from `develop`, merged to `main`.        |
+| `hotfix/*`       | Critical production fixes. Branched from `main`, merged to `main` and `develop`.            |
+
+### CI/CD Automation
+
+GitHub Actions workflows run on every push/PR:
+- **Feature branches**: Build, test, lint, and code coverage.
+- **Release branches**: Build, test, lint, and deploy to staging.
+- **Hotfix branches**: Build, test, lint, and deploy to production.
+- **Main/Develop branches**: Build, test, lint, and deploy (production/staging).
+
+Required status checks:
+- Build (`mvn clean verify`).
+- Lint (`mvn spotless:check`).
+- Tests (100% pass).
+- Code coverage (80% minimum via JaCoCo).
+
+### Branch Protection
+
+- **`main`**: Require PR review, status checks, signed commits, linear history.
+- **`develop`**: Require PR review, status checks, signed commits.
+
+### Getting Started with Git Flow
+
+1. Initialize Git Flow:
+   ```bash
+git flow init -d
+```
+2. Create a feature branch:
+   ```bash
+git flow feature start 3-2-bounding-box-filter
+```
+3. Push the branch:
+   ```bash
+git push origin feature/3-2-bounding-box-filter
+```
+4. Create a PR to `develop` and merge after CI passes.
+
+For more details, see [`docs/bmad/git-flow-ci-cd-spec.md`](docs/bmad/git-flow-ci-cd-spec.md).
+
 ## Running the System
 
 ### Start Infrastructure
