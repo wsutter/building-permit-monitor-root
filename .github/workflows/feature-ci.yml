@@ -1,0 +1,58 @@
+name: Feature Branch CI
+
+on:
+  push:
+    branches: [ "feature/**" ]
+  pull_request:
+    branches: [ "develop" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+      - run: mvn -pl contracts install
+      - run: mvn -pl ${{ matrix.module }} clean verify
+        env:
+          MODULE: ${{ matrix.module }}
+    strategy:
+      matrix:
+        module: [ingestor, normalizer, enricher, persistence, api]
+
+  lint:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+      - run: mvn -pl ${{ matrix.module }} spotless:check
+        env:
+          MODULE: ${{ matrix.module }}
+    strategy:
+      matrix:
+        module: [ingestor, normalizer, enricher, persistence, api]
+
+  test-coverage:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+      - run: mvn -pl ${{ matrix.module }} jacoco:report
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.module }}-coverage-report
+          path: ${{ matrix.module }}/target/site/jacoco
+    strategy:
+      matrix:
+        module: [ingestor, normalizer, enricher, persistence, api]
