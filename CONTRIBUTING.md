@@ -83,7 +83,7 @@ GitHub Actions workflows run on every push/PR:
 
 ## Code Style
 
-- Follow the [coding standards](docs/bmad/coding-standards.md).
+- Follow the [coding standards](docs/coding-standards.md).
 - Use `mvn spotless:apply` to format code before committing.
 
 ## Branch Protection

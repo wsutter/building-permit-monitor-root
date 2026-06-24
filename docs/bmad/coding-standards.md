@@ -89,8 +89,159 @@
 - Each Java module has its own `.gitignore` (Maven `target/`, IDE files, logs, `*.hprof`, local env/compose artifacts).
 - Keep commits scoped per module where practical; do not commit build output or local credentials.
 
-## 13. Security & Data Hygiene
+## 13. Java-Specific Rules
+
+### 1. Imports in Alphabetical Order
+- Sort imports alphabetically.
+- Enforce this via Spotless or Checkstyle.
+
+**Good:**
+```java
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.stereotype.Component;
+```
+
+**Bad:**
+```java
+import org.springframework.stereotype.Component;
+import java.util.List;
+import java.util.ArrayList;
+```
+
+---
+
+### 2. No `.*` Imports
+- List every class separately.
+- No wildcard imports.
+
+**Good:**
+```java
+import java.util.ArrayList;
+import java.util.List;
+```
+
+**Bad:**
+```java
+import java.util.*;
+```
+
+---
+
+### 3. No Fully Qualified Class Paths
+- All classes must be explicitly imported.
+- No fully qualified class names in the code.
+
+**Good:**
+```java
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class AppConfig {}
+```
+
+**Bad:**
+```java
+org.springframework.context.annotation.Configuration
+public class AppConfig {}
+```
+
+---
+
+### 4. No Large If-ElseIf-Else Blocks
+- Replace with **switch expressions** (Java 14+) where possible.
+- If switch expressions are not suitable, use polymorphism or strategy patterns.
+
+**Good (Switch Expression):**
+```java
+String result = switch (status) {
+    case "SUCCESS" -> "Operation succeeded";
+    case "FAILURE" -> "Operation failed";
+    default -> "Unknown status";
+};
+```
+
+**Good (Polymorphism):**
+```java
+interface StatusHandler {
+    String handle();
+}
+
+class SuccessHandler implements StatusHandler {
+    @Override
+    public String handle() { return "Operation succeeded"; }
+}
+
+class FailureHandler implements StatusHandler {
+    @Override
+    public String handle() { return "Operation failed"; }
+}
+```
+
+**Bad:**
+```java
+if (status.equals("SUCCESS")) {
+    return "Operation succeeded";
+} else if (status.equals("FAILURE")) {
+    return "Operation failed";
+} else {
+    return "Unknown status";
+}
+```
+
+---
+
+### 5. No Unused Imports
+- Remove all unused imports.
+- Enforce this via Spotless or Checkstyle.
+
+**Good:**
+```java
+import java.util.List;
+
+public class Example {
+    private List<String> items;
+}
+```
+
+**Bad:**
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+public class Example {
+    private List<String> items;
+}
+```
+
+---
+
+### 6. Update `module-info.java`
+- Ensure `module-info.java` is updated when new packages or modules are added.
+
+**Example:**
+```java
+module com.example.app {
+    requires java.base;
+    requires org.springframework.boot;
+    exports com.example.app.service;
+}
+```
+
+---
+
+## 14. Security & Data Hygiene
 
 - Local credentials (`app`/`app`, Conduktor admin) are **development-only**; production must use managed secrets.
 - Treat geocoded output as non-authoritative; surface quality, never silently fill gaps.
 - `--shell-escape` Pandoc/minted PDF generation is for trusted local docs only.
+
+---
+
+## General Rules
+
+### Formatting
+- Use `mvn spotless:apply` to format code before committing.
+- Ensure consistent indentation (4 spaces).
+- Trim trailing whitespace.
+- End files with a newline.
