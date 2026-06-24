@@ -87,4 +87,12 @@ This uses **step-file architecture** for disciplined execution:
 
 ## FIRST STEP
 
+<!-- Git Flow Enforcement: Check current branch -->
+<action>Run `git rev-parse --abbrev-ref HEAD` to check current branch</action>
+<check if="current branch does NOT match 'feature/*'">
+  <output>⚠️ **Git Flow Enforcement**: Code reviews must happen in a feature branch.</output>
+  <output>🔹 Switch to your feature branch and try again.</output>
+  <action>HALT - Switch to feature branch first</action>
+</check>
+
 Read fully and follow: `./steps/step-01-gather-context.md`

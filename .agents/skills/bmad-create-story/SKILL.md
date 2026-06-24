@@ -88,7 +88,15 @@ Activation is complete. If `activation_steps_prepend` or `activation_steps_appen
 
 <workflow>
 
-<step n="1" goal="Determine target story">
+<step n="1" goal="Determine target story and enforce Git Flow">
+  <!-- Git Flow Enforcement: Check current branch -->
+  <action>Run `git rev-parse --abbrev-ref HEAD` to check current branch</action>
+  <check if="current branch is NOT 'develop'">
+    <output>⚠️ **Git Flow Enforcement**: You must be on the `develop` branch to create a story.</output>
+    <output>🔹 Switch to `develop` and try again: `git checkout develop`</output>
+    <action>HALT - Switch to `develop` branch first</action>
+  </check>
+  
   <check if="{{story_path}} is provided by user or user provided the epic and story number such as 2-4 or 1.6 or epic 1 story 5">
     <action>Parse user-provided story path: extract epic_num, story_num, story_title from format like "1-2-user-auth"</action>
     <action>Set {{epic_num}}, {{story_num}}, {{story_key}} from user input</action>
