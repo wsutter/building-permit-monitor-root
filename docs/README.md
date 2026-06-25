@@ -451,7 +451,7 @@ Maven coordinates:
 ```xml
 <groupId>ch.studio-r2.building-permit-monitor</groupId>
 <artifactId>contracts</artifactId>
-<version>0.1.0-SNAPSHOT</version>
+<version>0.1.0</version>
 ```
 
 ### Repository: ingestor
@@ -1193,7 +1193,7 @@ building-permit-monitor/
 
     <groupId>ch.studio-r2.building-permit-monitor</groupId>
     <artifactId>root</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 
     <packaging>pom</packaging>
 
@@ -1391,7 +1391,7 @@ Example `ingestor/pom.xml`:
     <parent>
         <groupId>ch.studio-r2.building-permit-monitor</groupId>
         <artifactId>building-permit-monitor-parent</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.1.0</version>
     </parent>
 
     <artifactId>ingestor</artifactId>
@@ -2733,7 +2733,7 @@ mkdir -p examples
 
     <groupId>ch.studio-r2.building-permit-monitor</groupId>
     <artifactId>contracts</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -2873,7 +2873,7 @@ The Spring Boot services can then use this dependency:
 <dependency>
     <groupId>ch.studio-r2.building-permit-monitor</groupId>
     <artifactId>contracts</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
@@ -2909,7 +2909,7 @@ Additionally in `pom.xml`:
 <dependency>
     <groupId>ch.studio-r2.building-permit-monitor</groupId>
     <artifactId>contracts</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 
 <dependency>
@@ -3117,7 +3117,7 @@ Additionally:
 <dependency>
     <groupId>ch.studio-r2.building-permit-monitor</groupId>
     <artifactId>contracts</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
