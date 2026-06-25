@@ -1,0 +1,28 @@
+# Git Flow Automation for bmad-dev-story
+# Auto-creates feature branches and squash-merges to develop.
+
+[workflow]
+activation_steps_prepend = [
+  { type = "bash", command = "git flow init -d || true", description = "Initialize Git Flow if not already done" }
+]
+
+# Step 4: Branch creation (override)
+[[workflow.steps]]
+n = 4
+[[workflow.steps.actions]]
+type = "bash"
+command = "git flow feature start {{story_key}}"
+description = "Create feature branch for story"
+
+# Step 9: Completion (override)
+[[workflow.steps]]
+n = 9
+[[workflow.steps.actions]]
+type = "bash"
+command = "git add . && git commit -m '📦 Squash-merge {{story_key}}: {{story_title}}'"
+description = "Stage changes for squash-merge"
+
+[[workflow.steps.actions]]
+type = "bash"
+command = "git flow feature finish -s {{story_key}}"
+description = "Squash-merge feature branch to develop"

@@ -1,0 +1,19 @@
+# Git Flow Automation for bmad-code-review
+# Auto-merges approved stories and finishes releases.
+
+[workflow]
+
+# Story approval
+on_approve_story = [
+  { type = "bash", command = "git flow feature finish -s {{story_key}}", description = "Merge approved story to develop" }
+]
+
+# Release approval
+on_approve_release = [
+  { type = "bash", command = "git flow release finish -m 'Release {{version}}' {{version}}", description = "Finish release branch" }
+]
+
+# Hotfix approval
+on_approve_hotfix = [
+  { type = "bash", command = "git flow hotfix finish -m 'Hotfix {{hotfix_name}}' {{hotfix_name}}", description = "Finish hotfix branch" }
+]
