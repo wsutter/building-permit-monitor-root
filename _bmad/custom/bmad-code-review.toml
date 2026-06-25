@@ -2,33 +2,33 @@
 # - Squash-merges for features/hotfixes/releases.
 # - Human approval required for all merges.
 # - CI validation before approval.
-# - Minor version bumps for epics (1.1.0 -> 1.2.0).
-# - Patch version bumps for features/hotfixes (1.1.0 -> 1.1.1).
+# - Minor version bumps for epics (0.1.0 -> 0.2.0).
+# - Patch version bumps for features/hotfixes (0.1.0 -> 0.1.1).
+# - No SNAPSHOT versions on main branch.
 
 [workflow]
 activation_steps_prepend = [
   { type = "bash", command = "mvn --version && mvn versions:help | grep -q 'versions-maven-plugin' || { echo '❌ Versions Maven Plugin not found'; exit 1; }", description = "Check Maven setup" }
 ]
 
-# Release approval (minor version bump: 1.1.0 -> 1.2.0)
+# Release approval (minor version bump: 0.1.0 -> 0.2.0, no SNAPSHOT on main)
 on_approve_release = [
   { type = "human", prompt = "✅ CI passed for release/{{version}}. Approve to finish release (minor bump: {{version}} -> {{next_version}})?" },
-  { type = "bash", command = "git flow release finish -s {{version}} && git tag -a v{{version}} -m 'Release {{version}}' && git push origin main v{{version}}", description = "Finish release (squash-merge to main)" },
-  { type = "bash", command = "source _bmad/custom/scripts/maven_helpers.sh && next_version=$(calculate_next_minor_version {{version}}) && git checkout develop && mvn versions:set -DnewVersion=$next_version -DgenerateBackupPoms=false && git add pom.xml && git commit -m '🔖 Bump version to $next_version' && git push origin develop", description = "Bump develop to next minor version (1.2.0-SNAPSHOT)" },
+  { type = "bash", command = "git flow release finish -s {{version}} && git checkout main && mvn versions:set -DnewVersion={{version}} -DgenerateBackupPoms=false && git add . && git commit -m '🔖 Set release version to {{version}}' && git tag -a v{{version}} -m 'Release {{version}}' && git push origin main v{{version}}", description = "Finish release (squash-merge to main, no SNAPSHOT)" },
+  { type = "bash", command = "git checkout develop && source _bmad/custom/scripts/maven_helpers.sh && next_version=$(calculate_next_minor_version {{version}}) && mvn versions:set -DnewVersion=$next_version -DgenerateBackupPoms=false && git add . && git commit -m '🔖 Bump version to $next_version' && git push origin develop", description = "Bump develop to next minor SNAPSHOT (0.2.0-SNAPSHOT)" },
   { type = "bash", command = "git push origin --delete release/{{version}}", description = "Delete release branch" }
 ]
 
-# Feature approval (patch version bump: 1.1.0 -> 1.1.1-SNAPSHOT)
+# Feature approval (patch version bump: 0.1.0 -> 0.1.1-SNAPSHOT)
 on_approve_story = [
   { type = "human", prompt = "✅ CI passed for feature/{{story_key}}. Approve to merge (patch bump: $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout) -> $(source _bmad/custom/scripts/maven_helpers.sh && calculate_next_patch_version $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)))?" },
-  { type = "bash", command = "git flow feature finish -s {{story_key}} && git push origin develop", description = "Squash-merge feature to develop" },
-  { type = "bash", command = "source _bmad/custom/scripts/maven_helpers.sh && next_version=$(calculate_next_patch_version $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)) && mvn versions:set -DnewVersion=$next_version -DgenerateBackupPoms=false && git add pom.xml && git commit -m '🔖 Bump version to $next_version' && git push origin develop", description = "Bump develop to next patch version" }
+  { type = "bash", command = "git flow feature finish -s {{story_key}} && git push origin develop", description = "Squash-merge feature to develop" }
 ]
 
-# Hotfix approval (patch version bump: 1.1.0 -> 1.1.1)
+# Hotfix approval (patch version bump: 0.1.0 -> 0.1.1, no SNAPSHOT on main)
 on_approve_hotfix = [
   { type = "human", prompt = "✅ CI passed for hotfix/{{hotfix_name}}. Approve to merge (patch bump: $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout) -> {{hotfix_name}})?" },
-  { type = "bash", command = "git flow hotfix finish -s {{hotfix_name}} && git tag -a v{{hotfix_name}} -m 'Hotfix {{hotfix_name}}' && git push origin main v{{hotfix_name}} develop", description = "Squash-merge hotfix to main and develop" }
+  { type = "bash", command = "git flow hotfix finish -s {{hotfix_name}} && git checkout main && mvn versions:set -DnewVersion={{hotfix_name}} -DgenerateBackupPoms=false && git add . && git commit -m '🔖 Set hotfix version to {{hotfix_name}}' && git tag -a v{{hotfix_name}} -m 'Hotfix {{hotfix_name}}' && git push origin main v{{hotfix_name}} develop", description = "Squash-merge hotfix to main and develop (no SNAPSHOT on main)" }
 ]
 
 # Version facts
