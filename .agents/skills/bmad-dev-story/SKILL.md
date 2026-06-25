@@ -260,8 +260,9 @@ Activation is complete. If `activation_steps_prepend` or `activation_steps_appen
     </check>
   </step>
 
-  <step n="4" goal="Mark story in-progress" tag="sprint-status">
+  <step n="4" goal="Mark story in-progress and enforce Git Flow" tag="sprint-status">
     <action>If story file YAML frontmatter already contains `baseline_commit`, preserve the existing value and do not overwrite it</action>
+    <action>If story file YAML frontmatter already contains `feature_branch`, preserve the existing value and do not overwrite it</action>
 
     <check if="{{sprint_status}} file exists">
       <action>Load the FULL file: {{sprint_status}}</action>
@@ -273,10 +274,28 @@ Activation is complete. If `activation_steps_prepend` or `activation_steps_appen
       <action>Set {{current_status}} to the story file Status section value</action>
     </check>
 
+    <!-- Git Flow Enforcement: Create feature branch -->
     <check if="{{current_status}} == 'ready-for-dev' AND story file YAML frontmatter does NOT contain baseline_commit">
       <action>Run `git rev-parse HEAD` to capture current commit into {{baseline_commit}}; if git/version control is unavailable, set {{baseline_commit}} = `NO_VCS`</action>
       <action>If story file YAML frontmatter exists, add `baseline_commit: {{baseline_commit}}` to the frontmatter</action>
       <action>If story file has no YAML frontmatter, create frontmatter at the top containing only `baseline_commit: {{baseline_commit}}`</action>
+      
+      <!-- Create feature branch -->
+      <action>Set {{feature_branch}} = `feature/{{story_key}}`</action>
+      <action>Run `git checkout -b {{feature_branch}}` to create and switch to the feature branch</action>
+      <action>If story file YAML frontmatter exists, add `feature_branch: {{feature_branch}}` to the frontmatter</action>
+      <action>If story file has no YAML frontmatter, add `feature_branch: {{feature_branch}}` to the frontmatter</action>
+      
+      <action>Add to Dev Agent Record → Completion Notes: "🌿 Created feature branch: {{feature_branch}}"</action>
+      <action>Add to Change Log: "🌿 Feature branch created: {{feature_branch}} (Date: {{date}})"</action>
+    </check>
+
+    <!-- Git Flow Enforcement: Check current branch -->
+    <action>Run `git rev-parse --abbrev-ref HEAD` to check current branch</action>
+    <check if="current branch is NOT '{{feature_branch}}'">
+      <output>⚠️ **Git Flow Enforcement**: You must be on the feature branch `{{feature_branch}}` to implement this story.</output>
+      <output>🔹 Switch to the feature branch: `git checkout {{feature_branch}}`</output>
+      <action>HALT - Switch to feature branch first</action>
     </check>
 
     <check if="{{sprint_status}} file exists">
@@ -413,7 +432,14 @@ Activation is complete. If `activation_steps_prepend` or `activation_steps_appen
     <action>Run the full regression suite (do not skip)</action>
     <action>Confirm File List includes every changed file</action>
     <action>Execute enhanced definition-of-done validation</action>
-    <action>Update the story Status to: "review"</action>
+    
+    <!-- Git Flow Enforcement: Squash-merge to develop -->
+    <action>Extract `feature_branch` from story file YAML frontmatter</action>
+    <action>Run `git checkout develop` to switch to `develop` branch</action>
+    <action>Run `git merge --squash {{feature_branch}}` to squash-merge the feature branch</action>
+    <action>Run `git commit -m "📦 Squash-merge {{feature_branch}}: {{story_title}}"` to commit the changes</action>
+    
+    <action>Update the story Status to: "review"
 
     <!-- Enhanced Definition of Done Validation -->
     <action>Validate definition-of-done checklist with essential requirements:

@@ -5,73 +5,47 @@
 
 ## RULES
 
-- YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`
-- NEVER auto-push.
+- YOU MUST ALWAYS SPEAK OUTPUT in your Agent communication style with the config `{communication_language}`.
+- Never push, merge, delete branches, or create pull requests without explicit human confirmation.
+- The final state of this workflow is a review-ready feature branch, not an automatic merge.
 
 ## INSTRUCTIONS
 
-### Git Flow: Push and CI/CD Validation
-1. Run code styling checks and apply fixes:
-   ```bash
-   mvn spotless:apply
-   ```
-2. If `spotless:apply` makes changes, commit them with the message:
-   ```
-   Style: {story-key} - Apply code formatting
-   ```
-3. Push the feature branch to the remote repository:
-   ```bash
-   git push origin feature/{story-key}
-   ```
-4. Wait for the CI/CD pipeline to complete and confirm all checks pass.
-5. If the pipeline fails, halt and ask the user to fix the issues before proceeding.
+### Final Local Validation
 
-### Git Flow: Squash-Merge and Cleanup
-1. After CI/CD validation, squash-merge the feature branch into `develop` (or `main`):
-   ```bash
-   git checkout develop
-   git merge --squash feature/{story-key}
-   git commit -m "{story-key}"
-   ```
-2. Push the changes to the remote repository:
-   ```bash
-   git push origin develop
-   ```
-3. Delete the feature branch:
-   ```bash
-   git branch -d feature/{story-key}
-   git push origin --delete feature/{story-key}
-   ```
-4. If conflicts occur, halt and ask the user to resolve them manually.
+1. Run formatting/check commands only when they exist in the repository.
+   - For Java/Maven modules, prefer `mvn -B verify`.
+   - Run `mvn spotless:apply` only if the project declares Spotless.
+2. If formatting changes files, commit them locally with:
+   - `Style: {story-key-or-slug} - Apply code formatting`
+3. Do not push automatically.
 
-### TDD: Final Validation
-1. **Ensure All Tests Pass**
-   - Run all tests to confirm they pass.
-   - If any test fails, debug and fix the issue before proceeding.
-2. **Final Commit**
-   - After squash-merging, commit the final state with the message:
-     ```
-     Present: {story-key} - Squash-merge and cleanup
-     ```
-     Example:
-     ```
-     Present: 1-1-csv-mapping - Squash-merge and cleanup
-     ```
+### Git Flow: Human Handoff
+
+Prepare, but do not execute, the Git Flow commands the human may want next:
+
+```bash
+git push -u origin {branch_name}
+# open PR: {branch_name} -> develop
+# after approval, squash-merge via GitHub UI or locally
+```
+
+If the repository has no `develop` branch, target `main` instead and say so explicitly.
 
 ### Generate Suggested Review Order
 
 Read `{baseline_commit}` from `{spec_file}` frontmatter and construct the diff of all changes since that commit.
 
-Append the review order as a `## Suggested Review Order` section to `{spec_file}` **after the last existing section**. Do not modify the Code Map.
+Append the review order as a `## Suggested Review Order` section to `{spec_file}` after the last existing section. Do not modify the Code Map.
 
-Build the trail as an ordered sequence of **stops** — clickable `path:line` references with brief framing — optimized for a human reviewer reading top-down to understand the change:
+Build the trail as an ordered sequence of stops — clickable `path:line` references with brief framing — optimized for a human reviewer reading top-down to understand the change:
 
-1. **Order by concern, not by file.** Group stops by the conceptual concern they address (e.g., "validation logic", "schema change", "UI binding"). A single file may appear under multiple concerns.
-2. **Lead with the entry point** — the single highest-leverage file:line a reviewer should look at first to grasp the design intent.
-3. **Inside each concern**, order stops from most important / architecturally interesting to supporting. Lightly bias toward higher-risk or boundary-crossing stops.
-4. **End with peripherals** — tests, config, types, and other supporting changes come last.
-5. **Every code reference is a clickable spec-file-relative link.** Compute each link target as a relative path from `{spec_file}`'s directory to the changed file. Format each stop as a markdown link: `[short-name:line](../../path/to/file.ts#L42)`. Use a `#L` line anchor. Use the file's basename (or shortest unambiguous suffix) plus line number as the link text. The relative path must be dynamically derived — never hardcode the depth.
-6. **Each stop gets one ultra-concise line of framing** (≤15 words) — why this approach was chosen here and what it achieves in the context of the change. No paragraphs.
+1. Order by concern, not by file.
+2. Lead with the entry point.
+3. Inside each concern, order stops from most important to supporting.
+4. End with tests, config, types, and other supporting changes.
+5. Every code reference is a clickable spec-file-relative link with `#L` line anchors.
+6. Each stop gets one ultra-concise line of framing, no more than 15 words.
 
 Format each stop as framing first, link on the next indented line:
 
@@ -82,42 +56,34 @@ Format each stop as framing first, link on the next indented line:
 
 - {one-line framing}
   [`file.ts:42`](../../src/path/to/file.ts#L42)
-
-- {one-line framing}
-  [`other.ts:17`](../../src/path/to/other.ts#L17)
-
-**{Next concern}**
-
-- {one-line framing}
-  [`file.ts:88`](../../src/path/to/file.ts#L88)
 ```
 
-> The `../../` prefix above is illustrative — compute the actual relative path from `{spec_file}`'s directory to each target file.
-
-When there is only one concern, omit the bold label — just list the stops directly.
+When there is only one concern, omit the bold concern label.
 
 ### Mark Spec Done
 
 Change `{spec_file}` status to `done` in the frontmatter.
 
-Follow `./sync-sprint-status.md` with `{target_status}` = `review`.
+Follow `./sync-sprint-status.md` with `{target_status}` = `in-review`.
 
 ### Commit and Open
 
 1. If version control is available and the tree is dirty, create a local commit with a conventional message derived from the spec title.
 2. Open the spec in the user's editor so they can click through the Suggested Review Order:
-   - Resolve two absolute paths: (1) the repository root (`git rev-parse --show-toplevel` — returns the worktree root when in a worktree, project root otherwise; if this fails, fall back to the current working directory), (2) `{spec_file}`. Run `code -r "{absolute-root}" "{absolute-spec-file}"` — the root first so VS Code opens in the right context, then the spec file. Always double-quote paths to handle spaces and special characters.
-   - If `code` is not available (command fails), skip gracefully and tell the user the spec file path instead.
+   - Resolve two absolute paths: the repository root and `{spec_file}`.
+   - Run `code -r "{absolute-root}" "{absolute-spec-file}"`.
+   - If `code` is not available, skip gracefully and tell the user the spec file path instead.
 
 ### Display Summary
 
-Display summary of your work to the user, including the commit hash if one was created. Any file paths shown in conversation/terminal output must use CWD-relative format (no leading `/`) with `:line` notation (e.g., `src/path/file.ts:42`) for terminal clickability — the goal is to make paths clickable in terminal emulators. Include:
+Display summary of your work to the user, including the commit hash if one was created. Any file paths shown in conversation/terminal output must use CWD-relative format with `:line` notation and no leading `/`. Include:
 
-- A note that the spec is open in their editor (or the file path if it couldn't be opened). Mention that `{spec_file}` now contains a Suggested Review Order.
-- **Navigation tip:** "Ctrl+click (Cmd+click on macOS) the links in the Suggested Review Order to jump to each stop."
-- Offer to push and/or create a pull request.
+- A note that the spec is open in their editor, or the file path if it could not be opened.
+- Mention that `{spec_file}` now contains a Suggested Review Order.
+- Navigation tip: "Ctrl+click (Cmd+click on macOS) the links in the Suggested Review Order to jump to each stop."
+- The exact suggested Git Flow next commands, but do not run them.
 
-Workflow complete.
+Workflow complete. HALT and wait for human input.
 
 ## On Complete
 

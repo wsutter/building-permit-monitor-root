@@ -77,20 +77,404 @@
 - Naming: unit tests `*Test.java` (Surefire), integration tests `*IT.java` (Failsafe).
 - Run: `mvn test` (unit), `mvn verify` (incl. integration + Spotless + JaCoCo).
 
-## 11. Build & CI
+## 11. JUnit Test Standards
+
+### 1. Arrange/Act/Assert Pattern
+- Follow the **Arrange/Act/Assert (AAA)** pattern in every test method.
+- Clearly separate setup, execution, and verification.
+
+**Example (AAA Pattern):**
+```java
+@Test
+void composeAddress_returnsUnknownForMissingComponents() {
+    // Arrange
+    BuildingPermitRawEvent event = new BuildingPermitRawEvent(null, null, null, null);
+    
+    // Act
+    String result = AddressComposer.compose(event);
+    
+    // Assert
+    assertEquals("UNKNOWN_ADDRESS", result);
+}
+```
+
+---
+
+### 2. Comments
+- Add **meaningful comments** for:
+  - Test classes (purpose of the test suite).
+  - Nested test classes (purpose of the group).
+  - Test methods (what is being tested and why).
+
+**Example (Comments):**
+```java
+/**
+ * Tests for the AddressComposer utility.
+ * Ensures addresses are composed correctly from raw event fields.
+ */
+@DisplayName("AddressComposer")
+class AddressComposerTest {
+    /**
+     * Tests for valid address components.
+     * Ensures the composer handles all valid inputs correctly.
+     */
+    @Nested
+    @DisplayName("When all address components are valid")
+    class ValidComponents {
+        /**
+         * Tests that the composer returns the expected format for a full address.
+         */
+        @Test
+        @DisplayName("composes full address from valid components")
+        void composeAddress_returnsExpectedFormat() {}
+    }
+}
+```
+
+---
+
+### 3. Display Names
+- Use **`@DisplayName`** for test classes and methods to improve readability.
+- Avoid technical jargon; use plain language.
+
+**Example (Display Names):**
+```java
+@DisplayName("AddressComposer")
+class AddressComposerTest {
+    @Test
+    @DisplayName("composes full address from valid components")
+    void composeAddress_returnsExpectedFormat() {}
+}
+```
+
+---
+
+### 4. Mockito for Unit Tests
+- Use **Mockito** to mock dependencies in unit tests.
+- Avoid mocking value objects or simple POJOs.
+
+**Example (Mockito):**
+```java
+@ExtendWith(MockitoExtension.class)
+class NormalizerServiceTest {
+    @Mock
+    private AddressComposer addressComposer;
+    
+    @InjectMocks
+    private NormalizerService normalizerService;
+    
+    @Test
+    void normalize_setsAddressFromComposer() {
+        // Arrange
+        BuildingPermitRawEvent rawEvent = new BuildingPermitRawEvent("Hauptstrasse", "1", "8000", "Zürich");
+        when(addressComposer.compose(rawEvent)).thenReturn("Hauptstrasse 1, 8000 Zürich");
+        
+        // Act
+        BuildingPermitNormalizedEvent result = normalizerService.normalize(rawEvent);
+        
+        // Assert
+        assertEquals("Hauptstrasse 1, 8000 Zürich", result.getAddress());
+    }
+}
+```
+
+---
+
+### 5. Nested Tests
+- Use **`@Nested`** to group related test cases logically.
+- Add **meaningful comments** for each nested class to explain its purpose.
+
+**Example (Nested Tests):**
+```java
+@DisplayName("AddressComposer Tests")
+class AddressComposerTest {
+    @Nested
+    @DisplayName("When all address components are valid")
+    class ValidComponents {
+        // Tests for valid inputs
+    }
+    
+    @Nested
+    @DisplayName("When address components are missing")
+    class MissingComponents {
+        // Tests for missing inputs
+    }
+}
+```
+
+---
+
+### 6. Parameterized Tests
+- Use **parameterized tests** wherever possible to reduce boilerplate.
+- **Priority Order**: `MethodSource` → `CsvSource` → Other sources.
+- **MethodSource**: Return `Stream<Arguments>` for clarity and flexibility.
+- **Named Arguments**: Use `Arguments.of(named("description", value))` for readability.
+
+**Example (MethodSource):**
+```java
+@ParameterizedTest
+@MethodSource("addressCombinations")
+void composeAddress_returnsExpectedFormat(String street, String houseNumber, String postalCode, String city, String expected) {
+    // Arrange
+    BuildingPermitRawEvent event = new BuildingPermitRawEvent(street, houseNumber, postalCode, city);
+    
+    // Act
+    String result = AddressComposer.compose(event);
+    
+    // Assert
+    assertEquals(expected, result);
+}
+
+static Stream<Arguments> addressCombinations() {
+    return Stream.of(
+        Arguments.of(named("Full address", "Hauptstrasse 1, 8000 Zürich"), "Hauptstrasse", "1", "8000", "Zürich", "Hauptstrasse 1, 8000 Zürich"),
+        Arguments.of(named("Missing street", "UNKNOWN_ADDRESS"), null, "1", "8000", "Zürich", "UNKNOWN_ADDRESS")
+    );
+}
+```
+
+---
+
+### 7. SpringBootTest for Integration Tests
+- Use **`@SpringBootTest`** for integration tests that require the Spring context.
+- Avoid loading the full context for unit tests.
+
+**Example (SpringBootTest):**
+```java
+@SpringBootTest
+class NormalizerServiceIT {
+    @Autowired
+    private NormalizerService normalizerService;
+    
+    @Test
+    void normalize_integrationTest() {
+        // Arrange
+        BuildingPermitRawEvent rawEvent = new BuildingPermitRawEvent("Hauptstrasse", "1", "8000", "Zürich");
+        
+        // Act
+        BuildingPermitNormalizedEvent result = normalizerService.normalize(rawEvent);
+        
+        // Assert
+        assertNotNull(result.getAddress());
+    }
+}
+```
+
+---
+
+### 8. Test Data Randomization and Anonymization
+- **Randomize test data** to avoid bias.
+- **Anonymize data** to ensure it does not represent real places or addresses.
+- Use libraries like **`java-faker`** or **`DataFaker`** for generating realistic but fake data.
+
+**Example (Randomized Data):**
+```java
+static Stream<Arguments> randomAddressCombinations() {
+    Faker faker = new Faker();
+    return Stream.of(
+        Arguments.of(named("Random full address", faker.address().fullAddress()), faker.address().streetName(), faker.address().buildingNumber(), faker.address().zipCode(), faker.address().city(), faker.address().fullAddress()),
+        Arguments.of(named("Random missing street", "UNKNOWN_ADDRESS"), null, faker.address().buildingNumber(), faker.address().zipCode(), faker.address().city(), "UNKNOWN_ADDRESS")
+    );
+}
+```
+
+---
+
+### 9. Testcontainers for Integration Tests
+- Use **Testcontainers** for integration tests requiring external dependencies (e.g., databases, Kafka).
+- Use **`@Testcontainers`** and **`@Container`** annotations.
+
+**Example (Testcontainers):**
+```java
+@Testcontainers
+class PostGISRepositoryIT {
+    @Container
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgis/postgis:17-3.5");
+    
+    @Test
+    void savePermit_persistsData() {
+        // Arrange
+        PostGISRepository repository = new PostGISRepository(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+        BuildingPermit permit = new BuildingPermit("1", "Hauptstrasse 1, 8000 Zürich");
+        
+        // Act
+        repository.save(permit);
+        
+        // Assert
+        assertTrue(repository.existsById("1"));
+    }
+}
+```
+
+## 11. JUnit Test Standards
+
+*(See previous section for details.)*
+
+## 12. Build & CI
 
 - Whole reactor: `mvn clean verify`. Single module: `mvn -pl <module> clean verify`. With deps: `mvn -pl <module> -am clean verify`.
 - `contracts` is installed locally (`mvn -pl contracts install`) so dependents resolve it.
 - CI (GitHub Actions) builds per module with Temurin Java 25, running `spotless:check` then `clean verify`.
 - Documentation (PlantUML render + Pandoc PDF) is bound to the **Maven `site` lifecycle only**, never the default build.
 
-## 12. Git & `.gitignore`
+## 13. Git & `.gitignore`
 
 - Each Java module has its own `.gitignore` (Maven `target/`, IDE files, logs, `*.hprof`, local env/compose artifacts).
 - Keep commits scoped per module where practical; do not commit build output or local credentials.
 
-## 13. Security & Data Hygiene
+## 14. Java-Specific Rules
+
+### 1. Imports in Alphabetical Order
+- Sort imports alphabetically.
+- Enforce this via Spotless or Checkstyle.
+
+**Good:**
+```java
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.stereotype.Component;
+```
+
+**Bad:**
+```java
+import org.springframework.stereotype.Component;
+import java.util.List;
+import java.util.ArrayList;
+```
+
+---
+
+### 2. No `.*` Imports
+- List every class separately.
+- No wildcard imports.
+
+**Good:**
+```java
+import java.util.ArrayList;
+import java.util.List;
+```
+
+**Bad:**
+```java
+import java.util.*;
+```
+
+---
+
+### 3. No Fully Qualified Class Paths
+- All classes must be explicitly imported.
+- No fully qualified class names in the code.
+
+**Good:**
+```java
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class AppConfig {}
+```
+
+**Bad:**
+```java
+org.springframework.context.annotation.Configuration
+public class AppConfig {}
+```
+
+---
+
+### 4. No Large If-ElseIf-Else Blocks
+- Replace with **switch expressions** (Java 14+) where possible.
+- If switch expressions are not suitable, use polymorphism or strategy patterns.
+
+**Good (Switch Expression):**
+```java
+String result = switch (status) {
+    case "SUCCESS" -> "Operation succeeded";
+    case "FAILURE" -> "Operation failed";
+    default -> "Unknown status";
+};
+```
+
+**Good (Polymorphism):**
+```java
+interface StatusHandler {
+    String handle();
+}
+
+class SuccessHandler implements StatusHandler {
+    @Override
+    public String handle() { return "Operation succeeded"; }
+}
+
+class FailureHandler implements StatusHandler {
+    @Override
+    public String handle() { return "Operation failed"; }
+}
+```
+
+**Bad:**
+```java
+if (status.equals("SUCCESS")) {
+    return "Operation succeeded";
+} else if (status.equals("FAILURE")) {
+    return "Operation failed";
+} else {
+    return "Unknown status";
+}
+```
+
+---
+
+### 5. No Unused Imports
+- Remove all unused imports.
+- Enforce this via Spotless or Checkstyle.
+
+**Good:**
+```java
+import java.util.List;
+
+public class Example {
+    private List<String> items;
+}
+```
+
+**Bad:**
+```java
+import java.util.ArrayList;
+import java.util.List;
+
+public class Example {
+    private List<String> items;
+}
+```
+
+---
+
+### 6. Update `module-info.java`
+- Ensure `module-info.java` is updated when new packages or modules are added.
+
+**Example:**
+```java
+module com.example.app {
+    requires java.base;
+    requires org.springframework.boot;
+    exports com.example.app.service;
+}
+```
+
+---
+
+## 14. Security & Data Hygiene
 
 - Local credentials (`app`/`app`, Conduktor admin) are **development-only**; production must use managed secrets.
 - Treat geocoded output as non-authoritative; surface quality, never silently fill gaps.
 - `--shell-escape` Pandoc/minted PDF generation is for trusted local docs only.
+
+---
+
+## General Rules
+
+### Formatting
+- Use `mvn spotless:apply` to format code before committing.
+- Ensure consistent indentation (4 spaces).
+- Trim trailing whitespace.
+- End files with a newline.

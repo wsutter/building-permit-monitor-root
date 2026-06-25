@@ -1,0 +1,6 @@
+# Maven Versioning for bmad-create-story
+# Derives release version from epic key (e.g., epic-1 -> 1.0.0).
+
+[[workflow.facts]]
+name = "version"
+value = "{{epic_key | replace('epic-', '') | replace('-', '.') }}.0"

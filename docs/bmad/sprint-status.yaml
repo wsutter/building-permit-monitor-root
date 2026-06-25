@@ -50,11 +50,11 @@ story_location: docs/bmad
 
 development_status:
   # --- Epic 1: Trustworthy Permit Data ---
-  epic-1: in-progress
+  epic-1: done
   1-1-validate-and-document-the-csv-domain-field-mapping: done
-  1-2-broaden-building-permit-category-classification: backlog
-  1-3-robust-status-normalization: backlog
-  1-4-reliable-address-composition: backlog
+  1-2-broaden-building-permit-category-classification: done
+  1-3-robust-status-normalization: done
+  1-4-reliable-address-composition: done
   epic-1-retrospective: optional
 
   # --- Epic 2: Spatial Query API ---
@@ -77,3 +77,14 @@ development_status:
   epic-4: backlog
   4-1-embeddable-permit-map-deferred: backlog
   epic-4-retrospective: optional
+
+  # --- Epic 5: Technical Debt Cleanup ---
+  epic-5: backlog
+  5-1-generate-jacoco-reports-for-all-modules: backlog
+  5-2-replace-assertj-with-junit-native-assertions: backlog
+  5-3-implement-github-actions-for-each-submodule: backlog
+  5-4-enforce-explicit-class-imports: backlog
+  5-5-integrate-jira-with-bmad-for-state-synchronization: backlog
+  5-6-integrate-sonarqube-for-code-quality-analysis: backlog
+  5-7-automate-minor-releases-using-git-flow: backlog
+  epic-5-retrospective: optional

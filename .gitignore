@@ -51,10 +51,8 @@ Thumbs.db
 
 # Agentic AI
 .claude/
-.github/
 .opencode/
 
 # BMad method
-_bmad/
 _bmad-output/
 design-artifacts/

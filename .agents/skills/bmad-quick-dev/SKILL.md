@@ -37,7 +37,15 @@ A specification should target a **single user-facing goal** within **900–1600 
 
 ## On Activation
 
-### Step 1: Resolve the Workflow Block
+### Step 1: Resolve the Workflow Block and Enforce Git Flow
+
+<!-- Git Flow Enforcement: Check current branch -->
+<action>Run `git rev-parse --abbrev-ref HEAD` to check current branch</action>
+<check if="current branch is NOT 'develop'">
+  <output>⚠️ **Git Flow Enforcement**: You must be on the `develop` branch to start quick development.</output>
+  <output>🔹 Switch to `develop` and try again: `git checkout develop`</output>
+  <action>HALT - Switch to `develop` branch first</action>
+</check>
 
 Run: `python3 {project-root}/_bmad/scripts/resolve_customization.py --skill {skill-root} --key workflow`
 

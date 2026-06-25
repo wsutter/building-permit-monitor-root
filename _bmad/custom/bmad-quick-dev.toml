@@ -1,0 +1,15 @@
+# Git Flow Automation for bmad-quick-dev
+# Auto-creates and finishes hotfix branches.
+
+[workflow]
+activation_steps_prepend = [
+  { type = "bash", command = "git flow init -d || true", description = "Initialize Git Flow if not already done" }
+]
+
+# Hotfix start
+on_hotfix_start = [
+  { type = "bash", command = "git flow hotfix start {{hotfix_name}}", description = "Create hotfix branch" }
+]
+
+# Hotfix completion (triggered by bmad-code-review on_approve_hotfix)
+# No action needed here; handled by bmad-code-review.
