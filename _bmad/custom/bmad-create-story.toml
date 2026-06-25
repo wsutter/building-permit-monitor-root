@@ -1,6 +1,18 @@
-# Maven Versioning for bmad-create-story
-# Derives release version from epic key (e.g., epic-1 -> 1.0.0).
+# Git Flow Automation for bmad-create-story
+# - Auto-creates feature branch locally.
+# - Implements story and commits before pushing.
+# - Human approval required before squash-merge.
 
-[[workflow.facts]]
-name = "version"
-value = "{{epic_key | replace('epic-', '') | replace('-', '.') }}.0"
+[workflow]
+activation_steps_append = [
+  { type = "bash", command = "git flow feature start {{story_key}}", description = "Create feature branch locally" }
+]
+
+on_complete = [
+  { type = "bash", command = "bmad-dev-story --story {{story_key}}", description = "Implement story in feature branch" },
+  { type = "bash", command = "git add . && git commit -m '🚀 Implement story {{story_key}}'", description = "Commit implementation" },
+  { type = "human", prompt = "✅ Story {{story_key}} implemented. Push feature branch for review?" },
+  { type = "bash", command = "git push origin feature/{{story_key}}", description = "Push feature branch to remote" },
+  { type = "human", prompt = "✅ CI passed for feature/{{story_key}}. Approve to squash-merge to develop?" },
+  { type = "bash", command = "git flow feature finish -s {{story_key}} && git push origin develop", description = "Squash-merge to develop" }
+]
