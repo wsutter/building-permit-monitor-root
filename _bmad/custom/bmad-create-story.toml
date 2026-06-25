@@ -1,12 +1,6 @@
-# Git Flow Automation for bmad-create-story
-# Auto-creates release branches when an epic is marked 'done'.
+# Maven Versioning for bmad-create-story
+# Derives release version from epic key (e.g., epic-1 -> 1.0.0).
 
-[workflow]
-on_epic_done = [
-  { type = "bash", command = "git flow release start {{version}}", description = "Create release branch for epic" }
-]
-
-# Helper to derive version from epic key (e.g., epic-1 -> 1.0)
 [[workflow.facts]]
 name = "version"
-value = "{{epic_key | replace("epic-", "") | replace("-", ".")}}.0"
+value = "{{epic_key | replace('epic-', '') | replace('-', '.') }}.0"
